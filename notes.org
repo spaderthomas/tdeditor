@@ -1,0 +1,47 @@
+* 1.0 features
+- basic text editing functions
+  - cut
+  - paste
+  - copy
+  - marks
+  - cursor
+- read/write files from disk
+- handle input, render text as it comes (with backspace), correctly wrap to the
+  screen 
+* write stuff here
+ImDrawList: Holds a low-level list of polygons. When you make a draw call,
+ImGui figures out:
+1. UVs
+2. Vertices
+3. Color
+
+It reserves some space in the index array and vertex array and pushes the
+calculated values into the arrays. 
+
+GL Stuff:
+*VBO*: Vertex Buffer Object. This is the handle to a chunk of GPU memory. 
+*glVertexAttribPointer*: A call that modifies OpenGL state to tell it how to
+interpret the vertex buffer it gets. This is the place where you tell OpenGL how
+the data you are sending it is stored. 
+*VAO*: Nothing but a wrapper around several calls to the above. It is annoying
+to tell OpenGL how your data is stored in excruciating detail every time you
+want to use your vertex buffer, so you use this to replay those calls. 
+
+requirements for dynamic array:
+- resize
+- clear it out and reuse the memory
+* oof
+Default GL_TEXTURE_MIN_FILTER is GL_NEAREST_MIPMAP_LINEAR. Moreover, there is a
+parameter of the texture called GL_TEXTURE_MAX_LEVEL which sets the index of the
+highest defined mipmap level. If you don't specify it, it defaults to 1000. 
+
+Now, imagine that you don't know about this parameter. You don't create mipmaps
+(either because you are unaware of their function or you don't need them). Now
+you're in an OpenGL state where:
+
+1. The texture has a defined mipmap max level. OpenGL will therefore try to use
+   mipmaps when appropriate
+2. You have no mipmaps
+
+You can see the problem. The solution to this is to either fix 1 (Tell OpenGL
+that you have no mipmaps) or fix 2 (generate the mipmaps). 
