@@ -156,7 +156,8 @@ void FreeType_Init() {
 	}
 	
 	FT_Face face;
-	if (FT_New_Face(ft, "C:\\Windows\\Fonts\\arial.ttf", 0, &face)) {
+	char* font_path = td_strcat(get_conf("font_dir"), get_conf("font_default"));
+	if (FT_New_Face(ft, font_path, 0, &face)) {
 		TDNS_LOG("Error loading font");
 	}
 

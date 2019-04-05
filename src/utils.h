@@ -32,6 +32,16 @@ char* file_contents(FILE* file) {
 	return contents;
 }
 
+char* td_strcat(char* first, char* second) {
+	int total_len = strlen(first) + strlen(second) + 1;
+	char* buf = calloc(sizeof(char), total_len);
+	
+	memcpy(buf, first, strlen(first));
+	memcpy(buf + strlen(first), second, strlen(second));
+	
+	return buf;
+}
+
 // dumb stretchy buffer: a mod of sean barrett's stretchy buffer that lets you push
 // arbitrarily typed data to the same buffer. and since it's dumb, it keeps no metadata
 // about its contents! push your own tags or make them a part of your structs. 
@@ -168,4 +178,53 @@ void gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, G
 	sb_push(debug_msg, "\n\n");
 
 	TDNS_LOG_ARR(debug_msg);
+}
+
+struct Config {
+	char** keys;
+	char** values;
+};
+typedef struct Config Config;
+Config g_config = {0};
+
+
+void load_config() {
+	FILE* config_file = fopen("/Users/thspader/Programming/tdeditor/src/tded.conf", "r");
+	if (!config_file) {
+		TDNS_LOG("Error opening the config file.");
+	}
+	char* config_source = file_contents(config_file);
+
+	char** lines = NULL;
+	char* line = strtok(config_source, "\n");
+	while (line) {
+		sb_push(lines, line);
+		line = strtok(NULL, "\n");
+	}
+
+	fox_for(idx, sb_count(lines)) {
+		char* key = strtok(lines[idx], " ");
+		strtok(line, " "); // Eat the equals sign
+		char* value = strtok(NULL, " ");
+
+		int key_len = strlen(key);
+		char* key_buf = calloc(key_len + 1, sizeof(char));
+		memcpy(key_buf, key, key_len);
+		sb_push(g_config.keys, key_buf);
+
+		int val_len = strlen(value);
+		char* val_buf = calloc(val_len + 1, sizeof(char));
+		memcpy(val_buf, value, val_len);
+		sb_push(g_config.values, val_buf);
+	}
+}
+
+char* get_conf(char* key) {
+	fox_for(idx, sb_count(g_config.keys)) {
+		if (!strcmp(key, g_config.keys[idx])) {
+			return g_config.values[idx];
+		}
+	}
+
+	return NULL;
 }
