@@ -2,6 +2,9 @@ uint32 basic_shader;
 uint32 textured_shader;
 uint32 text_shader;
 
+// Use this to determine how far to move down for the next line
+float g_max_char_height;
+
 void shader_init(uint32* shader, const char* vs_path, const char* fs_path) {
 	// Grab the source code for the VS
 	FILE* vs_file = fopen(vs_path, "rb");
@@ -14,9 +17,9 @@ void shader_init(uint32* shader, const char* vs_path, const char* fs_path) {
 	bool success;
 
 	uint32 vs = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vs, 1, &vs_source, NULL);
+	glShaderSource(vs, 1, (const GLchar* const*)&vs_source, NULL);
 	glCompileShader(vs);
-	glGetProgramiv(vs, GL_COMPILE_STATUS, &success);
+	glGetProgramiv(vs, GL_COMPILE_STATUS, (int*)&success);
 	if (!success) {
 		char* what = malloc(512 * sizeof(char));
 		char* header = "Error compiling vertex shader!\n";
@@ -34,9 +37,9 @@ void shader_init(uint32* shader, const char* vs_path, const char* fs_path) {
 	char* fs_source = file_contents(fs_file);
 	
 	uint32 fs = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fs, 1, &fs_source, NULL);
+	glShaderSource(fs, 1, (const GLchar* const*)&fs_source, NULL);
 	glCompileShader(fs);
-	glGetProgramiv(fs, GL_COMPILE_STATUS, &success);
+	glGetProgramiv(fs, GL_COMPILE_STATUS, (int*)&success);
 	if (!success) {
 		char* what = malloc(512 * sizeof(char));
 		char* header = "Error compiling fragment shader!\n";
@@ -50,7 +53,7 @@ void shader_init(uint32* shader, const char* vs_path, const char* fs_path) {
 	glAttachShader(*shader, fs);
 	glLinkProgram(*shader);
 	
-	glGetProgramiv(*shader, GL_LINK_STATUS, &success);
+	glGetProgramiv(*shader, GL_LINK_STATUS, (int*)&success);
 	if (!success) {
 		char* what = malloc(512 * sizeof(char));
 		char* header = "Error linking shader program!\n";
@@ -89,9 +92,10 @@ union Shader_Info {
 typedef union Shader_Info Shader_Info;
 
 void shader_setup(Shader_Info* info) {
+	// The first element of each Shader_Info kind has an integer identifier
 	uint32 as_shader = *(uint32*)info;
+	
 	if (as_shader == basic_shader) {
-		Basic_Shader_Info basic_info = info->basic;
 		glUseProgram(basic_shader);
 	}
 	else if (as_shader == textured_shader) {
@@ -160,6 +164,7 @@ void character_add(FT_Face face, char c) {
 	screen_info->bearing.y = px_info->bearing.y / (float)g_viewport.y;
 	screen_info->advance = px_info->advance / (float)g_viewport.x;
 
+	g_max_char_height = max(g_max_char_height, px_info->size.y);
 }
 
 void FreeType_Init() {
@@ -255,43 +260,43 @@ void dl_push_primitive(Draw_List* draw_list,
 					   Draw_Command* cmd) {
 	dl_push_elements(draw_list, elements, count_elems);
 	dl_push_vertices(draw_list, vertices, count_verts);
-	sb_push(draw_list->command_buffer, *cmd);	
+	sb_push(draw_list->command_buffer, *cmd);
 }
 
 void dl_push_text(Draw_List* draw_list, char* text) {
 	if (!text) return;
 	
-	Vec2 point = { 0.f, 0.f }; // Point always refers to top right
+	Vec2 point = { -1.f, 1.f }; // Point always refers to top right
 	uint32 len = strlen(text);
 	fox_for(idx, len) {
 		char c = text[idx];
 		Character* char_info = &char_infos[c];
 		
 		// Make a rectangle:
-		float top = point.y + char_info->bearing.y;
-		float bottom = point.y - (char_info->size.y - char_info->bearing.y);
+		float top = point.y;
+		float bottom = point.y - (char_info->size.y);
 		float left = point.x + char_info->bearing.x;
 		float right = point.x + char_info->bearing.x + char_info->size.x;
 
 		Vertex bottom_left = {
-			left, bottom,
-			1.f, 1.f, 1.f,
-			0.f, 1.f
+		   {left, bottom},
+		   {1.f, 1.f, 1.f},
+		   {0.f, 1.f}
 		};
 		Vertex bottom_right = {
-			right, bottom,
-			1.f, 1.f, 1.f,
-			1.f, 1.f
+			{right, bottom},
+			{1.f, 1.f, 1.f},
+			{1.f, 1.f}
 		};
 		Vertex top_left = {
-			left, top,
-			1.f, 1.f, 1.f,
-			0.f, 0.f
+    		{left, top},
+	    	{1.f, 1.f, 1.f},
+    		{0.f, 0.f}
 		};
 		Vertex top_right = {
-			right, top,
-			1.f, 1.f, 1.f,
-			1.f, 0.f
+		    {right, top},
+		    {1.f, 1.f, 1.f},
+		    {1.f, 0.f}
 		};
 
 		Vertex verts[4] = {

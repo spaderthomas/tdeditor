@@ -106,24 +106,24 @@ int main(int argc, char** argv) {
 
 	// Some test vertices
 	Vertex top_right = {
-		0.0f, 0.0f,
-		0.f, 0.f, 0.f,
-		1.f, 0.f
+		{0.0f, 0.0f},
+		{0.f, 0.f, 0.f},
+		{1.f, 0.f}
 	};
 	Vertex bottom_right = {
-		.0f, -1.f,
-		0.f, 0.f, 0.f,
-		1.f, 1.f
+		{.0f, -1.f},
+		{0.f, 0.f, 0.f},
+		{1.f, 1.f}
 	};
 	Vertex bottom_left = {
-		-1.f, -1.f,
-		0.f, 0.f, 0.f,
-		0.f, 1.f
+	    {-1.f, -1.f},
+	    {0.f, 0.f, 0.f},
+	    {0.f, 1.f}
 	};
 	Vertex top_left = {
-		-1.f, 0.f,
-		0.f, 0.f, 0.f,
-		0.f, 0.f
+	    {-1.f, 0.f},
+	    {0.f, 0.f, 0.f},
+	    {0.f, 0.f}
 	};
 
 	Vertex test_vertices[4] = {
@@ -149,7 +149,8 @@ int main(int argc, char** argv) {
 	Draw_List draw_list = {0};
 	FreeType_Init();
 
-	char* what_to_draw = NULL;
+	tdstr input_buffer;
+	tdstr_init(&input_buffer);
 	float r = .5, g = .7, b = .9, a = 1;
 	while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -157,13 +158,13 @@ int main(int argc, char** argv) {
 		for (int key = GLFW_KEY_A; key <= GLFW_KEY_Z; key++) {
 			if (was_pressed(key)) {
 				char c = key;
-				sb_push(what_to_draw, c);
+				tdstr_push(&input_buffer, c);
 			}
 		}
 		glClearColor(r, g, b, a);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		dl_push_text(&draw_list, what_to_draw);
+		dl_push_text(&draw_list, input_buffer.buf);
 		
 		dl_render(&draw_list);
 		dl_reset(&draw_list);

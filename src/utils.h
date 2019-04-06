@@ -1,7 +1,9 @@
 #define true 1
-#define false NULL
+#define false 0
 #define fox_for(iter, until) for (unsigned iter = 0; iter < until; iter++)
 #define TDNS_LOG_ARR(sb) fox_for(i, sb_count((sb))) { TDNS_LOG(sb[i]); }
+#define max(a, b) ((a) > (b) ? (a) : (b))
+#define min(a, b) ((a) < (b) ? (a) : (b))
 
 // Globals
 uint32 g_VAO;
@@ -66,6 +68,35 @@ void* dsb__growf(void* dsb, int bytes) {
 	}
 	p[1] = grow;
 	return p + 2;
+}
+
+struct tdstr {
+	int cap;
+	int len;
+	char* buf;
+};
+typedef struct tdstr tdstr;
+
+#define STRING_DEFAULT_CAP 8
+
+void tdstr_init(tdstr* string) {
+	string->buf = calloc(STRING_DEFAULT_CAP + 1, sizeof(char));
+	string->cap = STRING_DEFAULT_CAP;
+	string->len = 0;
+}
+
+void tdstr_maybe_grow(tdstr* string) {
+	if (string->len == string->cap) {
+		// Double the buffer for the string
+		string->cap *= 2;
+		string->buf = realloc(string->buf, (string->cap + 1) * sizeof(char));
+
+	}
+}
+void tdstr_push(tdstr* string, char c) {
+	tdstr_maybe_grow(string);
+	string->buf[string->len++] = c;
+	string->buf[string->len] = 0;
 }
 
 
