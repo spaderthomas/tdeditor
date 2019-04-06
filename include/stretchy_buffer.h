@@ -17,8 +17,8 @@
 #define stb_sb_count(a)        ((a) ? stb__sbn(a) : 0)
 #define stb_sb_add(a,n)        (stb__sbmaybegrow(a,n), stb__sbn(a)+=(n), &(a)[stb__sbn(a)-(n)])
 #define stb_sb_last(a)         ((a)[stb__sbn(a)-1])
-#define tdns_sb_resetn(a)      (stb__sbn((a)) = 0)
-#define tdns_sb_clear(a)       (memset((a), 0, sizeof(*(a)) * stb_sb_count((a))), tdns_sb_resetn((a)))
+#define tdns_sb_resetn(a)      ((a) ? stb__sbn((a)) = 0 : 0)
+#define tdns_sb_clear(a)       ((a) ? (memset((a), 0, sizeof(*(a)) * stb_sb_count((a))), tdns_sb_resetn((a))) : 0)
 
 #define stb__sbraw(a) ((int *) (a) - 2)
 #define stb__sbm(a)   stb__sbraw(a)[0]

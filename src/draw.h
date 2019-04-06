@@ -180,6 +180,10 @@ void FreeType_Init() {
 	for (char c = 'a'; c <= 'z'; c++) {
 		character_add(face, c);
 	}
+
+	for (char c = 'A'; c <= 'Z'; c++) {
+		character_add(face, c);
+	}
 }
 
 
@@ -255,6 +259,8 @@ void dl_push_primitive(Draw_List* draw_list,
 }
 
 void dl_push_text(Draw_List* draw_list, char* text) {
+	if (!text) return;
+	
 	Vec2 point = { 0.f, 0.f }; // Point always refers to top right
 	uint32 len = strlen(text);
 	fox_for(idx, len) {

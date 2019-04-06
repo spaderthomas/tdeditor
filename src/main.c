@@ -14,6 +14,8 @@
 #include "data_types.h"
 #include "utils.h"
 #include "draw.h"
+#include "input.h"
+#include "glfw_callbacks.h"
 
 int main(int argc, char** argv) {
 	load_config(&g_config);
@@ -38,6 +40,7 @@ int main(int argc, char** argv) {
 	glfwMakeContextCurrent(window);
 
 	glfwSetFramebufferSizeCallback(window, glfw_resize_callback);
+	glfwSetKeyCallback(window, glfw_key_callback);
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		return -1;
@@ -146,28 +149,27 @@ int main(int argc, char** argv) {
 	Draw_List draw_list = {0};
 	FreeType_Init();
 
+	char* what_to_draw = NULL;
 	float r = .5, g = .7, b = .9, a = 1;
 	while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
+		for (int key = GLFW_KEY_A; key <= GLFW_KEY_Z; key++) {
+			if (was_pressed(key)) {
+				char c = key;
+				sb_push(what_to_draw, c);
+			}
+		}
 		glClearColor(r, g, b, a);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		dl_push_text(&draw_list, "whatup");
-		/*
-		Draw_Command draw_cmd;
-		draw_cmd.elem_count = 6;
-		make_text_shader_info(shader_info);
-		shader_info.text.texture = characters['y'].texture;
-		draw_cmd.shader_info = shader_info;
-
-		dl_push_primitive(&draw_list, test_vertices, 4, square_indices, 6, &draw_cmd);
-		*/
+		dl_push_text(&draw_list, what_to_draw);
 		
 		dl_render(&draw_list);
 		dl_reset(&draw_list);
 		
  		glfwSwapBuffers(window);
+		reset_input();
 	}
 	
 	printf("hahahahahaahahah!");
