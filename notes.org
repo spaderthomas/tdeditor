@@ -6,6 +6,10 @@
   - marks
   - cursor
 - read/write files from disk
+- [ ] fill the screen with text on input
+  - [ ] set up glfw input callbacks
+  - [ ] don't hardcode the viewport in the character
+  - [ ] algorithm to move to next line
 - handle input, render text as it comes (with backspace), correctly wrap to the
   screen 
 * write stuff here
@@ -18,7 +22,11 @@ ImGui figures out:
 It reserves some space in the index array and vertex array and pushes the
 calculated values into the arrays. 
 
-GL Stuff:
+requirements for dynamic array:
+- resize
+- clear it out and reuse the memory
+* oof
+** opengl
 *VBO*: Vertex Buffer Object. This is the handle to a chunk of GPU memory. 
 *glVertexAttribPointer*: A call that modifies OpenGL state to tell it how to
 interpret the vertex buffer it gets. This is the place where you tell OpenGL how
@@ -26,11 +34,7 @@ the data you are sending it is stored.
 *VAO*: Nothing but a wrapper around several calls to the above. It is annoying
 to tell OpenGL how your data is stored in excruciating detail every time you
 want to use your vertex buffer, so you use this to replay those calls. 
-
-requirements for dynamic array:
-- resize
-- clear it out and reuse the memory
-* oof
+** why you have to enable textures
 Default GL_TEXTURE_MIN_FILTER is GL_NEAREST_MIPMAP_LINEAR. Moreover, there is a
 parameter of the texture called GL_TEXTURE_MAX_LEVEL which sets the index of the
 highest defined mipmap level. If you don't specify it, it defaults to 1000. 
@@ -45,3 +49,15 @@ you're in an OpenGL state where:
 
 You can see the problem. The solution to this is to either fix 1 (Tell OpenGL
 that you have no mipmaps) or fix 2 (generate the mipmaps). 
+** compiling on mac
+- Frameworks to link against
+  - Cocoa     (duh)
+  - OpenGL    (duh)
+  - CoreVideo (?)
+  - IOKit     (?)
+- You <have> to include this line in your source, before you initialize your
+  GLFW window. Why? I'm not sure.
+#+BEGIN_SRC c
+glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#+END_SRC
+

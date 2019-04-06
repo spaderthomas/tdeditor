@@ -6,5 +6,5 @@ cd build
 ../src/*.c \
 -I../include \
 /Users/thspader/Programming/tdeditor/lib/libfreetype.a /Users/thspader/Programming/tdeditor/lib/libglfw3.a -lbz2 -lz \
--framework Cocoa -framework OpenGL -framework Cocoa -framework CoreVideo -framework IOKit \
+-framework Cocoa -framework OpenGL -framework CoreVideo -framework IOKit \
 -o tdeditor

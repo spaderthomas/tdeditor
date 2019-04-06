@@ -116,7 +116,11 @@ struct Character {
 	float advance;
 };
 typedef struct Character Character;
-Character characters[128] = {0};
+
+// In raw pixel units; use these to recalculate when the viewport changes
+Character px_char_infos[128] = {0};
+// In screen units; use these when you're calculating vertices to draw! 
+Character char_infos[128] = {0};
 
 void character_add(FT_Face face, char c) {
 	if (FT_Load_Char(face, c, FT_LOAD_RENDER)) {
@@ -125,9 +129,10 @@ void character_add(FT_Face face, char c) {
 		TDNS_LOG(error_msg);
 	}
 
-	Character* character = characters + c;
-	glGenTextures(1, &character->texture);
-	glBindTexture(GL_TEXTURE_2D, character->texture);
+	Character* px_info = px_char_infos + c;
+	Character* screen_info = char_infos + c;
+	glGenTextures(1, &px_info->texture);
+	glBindTexture(GL_TEXTURE_2D, px_info->texture);
 	glTexImage2D(GL_TEXTURE_2D,
 				 0,
 				 GL_RED,
@@ -142,11 +147,19 @@ void character_add(FT_Face face, char c) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	character->size.x = face->glyph->bitmap.width / g_viewport.x;
-	character->size.y = face->glyph->bitmap.rows / g_viewport.y;
-	character->bearing.x = face->glyph->bitmap_left  / g_viewport.x;
-	character->bearing.y = face->glyph->bitmap_top  / g_viewport.y;
-	character->advance = face->glyph->advance.x * 64  / g_viewport.x; // FT stores this in 1/64 pixel increments 
+	px_info->size.x = face->glyph->bitmap.width;
+	px_info->size.y = face->glyph->bitmap.rows;
+	px_info->bearing.x = face->glyph->bitmap_left;
+	px_info->bearing.y = face->glyph->bitmap_top;
+	px_info->advance = (float)face->glyph->advance.x / 64; // FT stores this in 1/64 pixel increments
+
+	screen_info->texture = px_info->texture;
+	screen_info->size.x = px_info->size.x / (float)g_viewport.x;
+	screen_info->size.y = px_info->size.y / (float)g_viewport.y;
+	screen_info->bearing.x = px_info->bearing.x / (float)g_viewport.x;
+	screen_info->bearing.y = px_info->bearing.y / (float)g_viewport.y;
+	screen_info->advance = px_info->advance / (float)g_viewport.x;
+
 }
 
 void FreeType_Init() {
@@ -168,6 +181,7 @@ void FreeType_Init() {
 		character_add(face, c);
 	}
 }
+
 
 typedef struct Draw_Command {
 	uint32 elem_count;
@@ -240,26 +254,61 @@ void dl_push_primitive(Draw_List* draw_list,
 	sb_push(draw_list->command_buffer, *cmd);	
 }
 
-void dl_push_text(Draw_List* draw_list, const char* text) {
-	Vec2 point = { 0.f, 0.f };
+void dl_push_text(Draw_List* draw_list, char* text) {
+	Vec2 point = { 0.f, 0.f }; // Point always refers to top right
 	uint32 len = strlen(text);
 	fox_for(idx, len) {
-		Character* c = characters + idx;
-
+		char c = text[idx];
+		Character* char_info = &char_infos[c];
+		
 		// Make a rectangle:
-		//   Left: point.x + bearing.x
-		//   Bottom: point.y - (height - bearing.y)
-		//   Right: point.x + bearing.x + size.x
-		//   Top: point.y + bearing.y
-		float top = point.y + c->bearing.y;
-		float bottom = point.y - (c->size.y - c->bearing.y);
-		float left = point.x + c->bearing.x;
-		float right = point.x + c->bearing.x + c->size.x;
+		float top = point.y + char_info->bearing.y;
+		float bottom = point.y - (char_info->size.y - char_info->bearing.y);
+		float left = point.x + char_info->bearing.x;
+		float right = point.x + char_info->bearing.x + char_info->size.x;
 
 		Vertex bottom_left = {
 			left, bottom,
-			1.f
+			1.f, 1.f, 1.f,
+			0.f, 1.f
 		};
+		Vertex bottom_right = {
+			right, bottom,
+			1.f, 1.f, 1.f,
+			1.f, 1.f
+		};
+		Vertex top_left = {
+			left, top,
+			1.f, 1.f, 1.f,
+			0.f, 0.f
+		};
+		Vertex top_right = {
+			right, top,
+			1.f, 1.f, 1.f,
+			1.f, 0.f
+		};
+
+		Vertex verts[4] = {
+		    top_right,
+		    bottom_right,
+		    bottom_left,
+		    top_left
+	    };
 		
+	    uint32 indices[6] = {
+	    	0, 1, 3,
+	    	1, 2, 3
+    	};
+		
+		Draw_Command draw_cmd;
+		draw_cmd.elem_count = 6;
+		make_text_shader_info(shader_info);
+		shader_info.text.texture = char_info->texture;
+		draw_cmd.shader_info = shader_info;
+
+		dl_push_primitive(draw_list, verts, 4, indices, 6, &draw_cmd);
+
+		point.x += char_info->advance;
+
 	}
 }

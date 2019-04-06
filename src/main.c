@@ -153,6 +153,8 @@ int main(int argc, char** argv) {
 		glClearColor(r, g, b, a);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		dl_push_text(&draw_list, "whatup");
+		/*
 		Draw_Command draw_cmd;
 		draw_cmd.elem_count = 6;
 		make_text_shader_info(shader_info);
@@ -160,7 +162,8 @@ int main(int argc, char** argv) {
 		draw_cmd.shader_info = shader_info;
 
 		dl_push_primitive(&draw_list, test_vertices, 4, square_indices, 6, &draw_cmd);
-			
+		*/
+		
 		dl_render(&draw_list);
 		dl_reset(&draw_list);
 		
