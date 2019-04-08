@@ -20,7 +20,6 @@
 int main(int argc, char** argv) {
 	load_config(&g_config);
 
-	
 	// GLFW init
 	glfwSetErrorCallback(glfw_error_callback);
 
@@ -104,6 +103,10 @@ int main(int argc, char** argv) {
 	
 	glGenerateMipmap(GL_TEXTURE_2D);
 
+	// Set up our global data structures
+	FreeType_Init();
+	fill_shift_map();
+
 	// Some test vertices
 	Vertex top_right = {
 		{0.0f, 0.0f},
@@ -147,7 +150,6 @@ int main(int argc, char** argv) {
 	};
 
 	Draw_List draw_list = {0};
-	FreeType_Init();
 
 	tdstr input_buffer;
 	tdstr_init(&input_buffer);
@@ -155,15 +157,10 @@ int main(int argc, char** argv) {
 	while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
-		for (int key = GLFW_KEY_SPACE; key <= GLFW_KEY_GRAVE_ACCENT; key++) {
-			if (was_pressed(key)) {
-				char c = key;
-				tdstr_push(&input_buffer, c);
-			}
-		}
 		glClearColor(r, g, b, a);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		send_input(&input_buffer);
 		dl_push_text(&draw_list, input_buffer.buf);
 		
 		dl_render(&draw_list);

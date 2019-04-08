@@ -279,8 +279,8 @@ void dl_push_text(Draw_List* draw_list, char* text) {
 		Character* char_info = &char_infos[c];
 		
 		// Make a rectangle:
-		float bottom = point.y - (char_info->size.y - char_info->bearing.y);
-		float top = point.y + char_info->size.y;
+		float bottom = point.y - char_info->size.y + char_info->bearing.y;
+		float top = point.y + char_info->bearing.y;
 		float left = point.x + char_info->bearing.x;
 		float right = point.x + char_info->bearing.x + char_info->size.x;
 
