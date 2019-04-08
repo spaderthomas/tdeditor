@@ -10,8 +10,9 @@ uint32 g_VAO;
 uint32 g_VBO;
 uint32 EBO;
 uint32 g_texture;
-IVec2 g_viewport = { 800, 600 };
 
+IVec2 g_viewport = { 800, 600 };
+float g_max_char_height;
 void TDNS_LOG(const char* str) {
 	printf("%s", str);
 }
@@ -70,6 +71,8 @@ void* dsb__growf(void* dsb, int bytes) {
 	return p + 2;
 }
 
+// stretchy_buffer is not useful for strings, because we need to null terminate
+// so use this for easy C strings!
 struct tdstr {
 	int cap;
 	int len;

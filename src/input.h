@@ -15,3 +15,7 @@ void reset_input() {
 bool was_pressed(int key) {
 	return g_input.is_down[key] && !g_input.was_down[key];
 }
+
+void send_input(tdstr buffer) {
+	
+}

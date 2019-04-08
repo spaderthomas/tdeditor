@@ -6,13 +6,14 @@ void glfw_resize_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 	g_viewport.x = width;
 	g_viewport.y = height;
+
+	load_char_info_screen();
 }
 
 
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	if (action == GLFW_PRESS) { g_input.is_down[key] = true; }
     if (action == GLFW_RELEASE) { g_input.is_down[key] = false; } 
-
 }
 
 void gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void *userParam) {

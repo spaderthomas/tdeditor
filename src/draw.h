@@ -2,9 +2,6 @@ uint32 basic_shader;
 uint32 textured_shader;
 uint32 text_shader;
 
-// Use this to determine how far to move down for the next line
-float g_max_char_height;
-
 void shader_init(uint32* shader, const char* vs_path, const char* fs_path) {
 	// Grab the source code for the VS
 	FILE* vs_file = fopen(vs_path, "rb");
@@ -121,51 +118,64 @@ struct Character {
 };
 typedef struct Character Character;
 
+#define COUNT_ASCII 128
+
 // In raw pixel units; use these to recalculate when the viewport changes
-Character px_char_infos[128] = {0};
-// In screen units; use these when you're calculating vertices to draw! 
-Character char_infos[128] = {0};
+Character px_char_infos[COUNT_ASCII] = {0};
+// Call this once to generate a texture for each character and mark the
+// pixel values that define the character
+void load_char_info_px(FT_Face face) {
+	for (char c = ' '; c <= '~'; c++) {
+		if (FT_Load_Char(face, c, FT_LOAD_RENDER)) {
+			char* error_msg = malloc(64 * sizeof(char));
+			sprintf(error_msg, "FreeType failed to load character: %c", c);
+			TDNS_LOG(error_msg);
+		}
 
-void character_add(FT_Face face, char c) {
-	if (FT_Load_Char(face, c, FT_LOAD_RENDER)) {
-		char* error_msg = malloc(64 * sizeof(char));
-		sprintf(error_msg, "FreeType failed to load character: %c", c);
-		TDNS_LOG(error_msg);
+		Character* px_char_info = px_char_infos + c;
+		glGenTextures(1, &px_char_info->texture);
+		glBindTexture(GL_TEXTURE_2D, px_char_info->texture);
+		glTexImage2D(GL_TEXTURE_2D,
+					 0,
+					 GL_RED,
+					 face->glyph->bitmap.width, face->glyph->bitmap.rows,
+					 0,
+					 GL_RED,
+					 GL_UNSIGNED_BYTE,
+					 face->glyph->bitmap.buffer);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		px_char_info->size.x = face->glyph->bitmap.width;
+		px_char_info->size.y = face->glyph->bitmap.rows;
+		px_char_info->bearing.x = face->glyph->bitmap_left;
+		px_char_info->bearing.y = face->glyph->bitmap_top;
+		px_char_info->advance = (float)face->glyph->advance.x / 64; // FT stores this in 1/64 pixel increments
+
+		g_max_char_height = max(g_max_char_height, px_char_info->size.y);
 	}
-
-	Character* px_info = px_char_infos + c;
-	Character* screen_info = char_infos + c;
-	glGenTextures(1, &px_info->texture);
-	glBindTexture(GL_TEXTURE_2D, px_info->texture);
-	glTexImage2D(GL_TEXTURE_2D,
-				 0,
-				 GL_RED,
-				 face->glyph->bitmap.width, face->glyph->bitmap.rows,
-				 0,
-				 GL_RED,
-				 GL_UNSIGNED_BYTE,
-				 face->glyph->bitmap.buffer);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	px_info->size.x = face->glyph->bitmap.width;
-	px_info->size.y = face->glyph->bitmap.rows;
-	px_info->bearing.x = face->glyph->bitmap_left;
-	px_info->bearing.y = face->glyph->bitmap_top;
-	px_info->advance = (float)face->glyph->advance.x / 64; // FT stores this in 1/64 pixel increments
-
-	screen_info->texture = px_info->texture;
-	screen_info->size.x = px_info->size.x / (float)g_viewport.x;
-	screen_info->size.y = px_info->size.y / (float)g_viewport.y;
-	screen_info->bearing.x = px_info->bearing.x / (float)g_viewport.x;
-	screen_info->bearing.y = px_info->bearing.y / (float)g_viewport.y;
-	screen_info->advance = px_info->advance / (float)g_viewport.x;
-
-	g_max_char_height = max(g_max_char_height, px_info->size.y);
 }
+
+Character char_infos[COUNT_ASCII] = {0};
+// Convenience: Translate the pixel values that FreeType gives us into
+// screen coordinates. Call this function when the viewport changes
+void load_char_info_screen() {
+	for (char c = ' '; c <= '~'; c++) {
+		Character* px_char_info = px_char_infos + c;
+		Character* char_info = char_infos + c;
+		
+		char_info->texture = px_char_info->texture;
+		char_info->size.x = px_char_info->size.x / (float)g_viewport.x;
+		char_info->size.y = px_char_info->size.y / (float)g_viewport.y;
+		char_info->bearing.x = px_char_info->bearing.x / (float)g_viewport.x;
+		char_info->bearing.y = px_char_info->bearing.y / (float)g_viewport.y;
+		char_info->advance = px_char_info->advance / (float)g_viewport.x;
+	}
+}
+
 
 void FreeType_Init() {
 	FT_Library ft;
@@ -181,14 +191,9 @@ void FreeType_Init() {
 
 	FT_Set_Pixel_Sizes(face, 0, 48);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	
-	for (char c = 'a'; c <= 'z'; c++) {
-		character_add(face, c);
-	}
 
-	for (char c = 'A'; c <= 'Z'; c++) {
-		character_add(face, c);
-	}
+	load_char_info_px(face);
+	load_char_info_screen();
 }
 
 
@@ -265,16 +270,17 @@ void dl_push_primitive(Draw_List* draw_list,
 
 void dl_push_text(Draw_List* draw_list, char* text) {
 	if (!text) return;
-	
-	Vec2 point = { -1.f, 1.f }; // Point always refers to top right
+
+	float screen_max_char_height = g_max_char_height / g_viewport.y;
+	Vec2 point = { -1.f, 1.f - screen_max_char_height };
 	uint32 len = strlen(text);
 	fox_for(idx, len) {
 		char c = text[idx];
 		Character* char_info = &char_infos[c];
 		
 		// Make a rectangle:
-		float top = point.y;
-		float bottom = point.y - (char_info->size.y);
+		float bottom = point.y - (char_info->size.y - char_info->bearing.y);
+		float top = point.y + char_info->size.y;
 		float left = point.x + char_info->bearing.x;
 		float right = point.x + char_info->bearing.x + char_info->size.x;
 
@@ -320,6 +326,9 @@ void dl_push_text(Draw_List* draw_list, char* text) {
 		dl_push_primitive(draw_list, verts, 4, indices, 6, &draw_cmd);
 
 		point.x += char_info->advance;
-
+		if (point.x > 1) {
+			point.x = -1;
+			point.y -= g_max_char_height / (float)g_viewport.y;
+		}
 	}
 }

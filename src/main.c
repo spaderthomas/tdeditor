@@ -155,7 +155,7 @@ int main(int argc, char** argv) {
 	while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
-		for (int key = GLFW_KEY_A; key <= GLFW_KEY_Z; key++) {
+		for (int key = GLFW_KEY_SPACE; key <= GLFW_KEY_GRAVE_ACCENT; key++) {
 			if (was_pressed(key)) {
 				char c = key;
 				tdstr_push(&input_buffer, c);
