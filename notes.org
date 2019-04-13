@@ -1,31 +1,25 @@
 * 1.0 features
-- basic text editing functions
+- editing functions
   - cut
   - paste
   - copy
-  - marks
+  - mark select
   - cursor
 - read/write files from disk
-- [ ] fill the screen with text on input
-  - [ ] set up glfw input callbacks
-  - [ ] don't hardcode the viewport in the character
-  - [ ] algorithm to move to next line
-- handle input, render text as it comes (with backspace), correctly wrap to the
-  screen 
+* todo
+@spader 4/8/19: Fix the way you determine the padding between lines. Right now,
+you just move the point down by however tall the tallest character is. But a few
+characters dip below, so characters can intersect. 
+
+@spader 4/8/19: The Shader_Info stuff is bad. I hate make_blah_shader_info. 
+* done!
+- handle input
+- render text as it comes (with backspace)
+- correctly wrap to the screen 
 * write stuff here
-ImDrawList: Holds a low-level list of polygons. When you make a draw call,
-ImGui figures out:
-1. UVs
-2. Vertices
-3. Color
-
-It reserves some space in the index array and vertex array and pushes the
-calculated values into the arrays. 
-
-requirements for dynamic array:
-- resize
-- clear it out and reuse the memory
-
+- hardcode cmd + blah
+- move the mark
+** key codes
 Has to get rendered
 | GLFW_KEY_SPACE         |            32 |
 | GLFW_KEY_APOSTROPHE    |            39 |
@@ -152,6 +146,27 @@ Unused
 | GLFW_KEY_KP_EQUAL      |           336 |
 | GLFW_KEY_MENU          |           348 |
 | GLFW_KEY_LAST          | GLFW_KEY_MENU |
+** ideas
+- make all the configs in pure C -- dont even worry about using a config
+  language
+- cop the idea of modes: modes define a hook that runs when you enter it. this
+  is what will set up your key bindings (not sure what other stuff)
+- rope:
+  - do i have to have individual allocations for each piece of the buffer that
+    is stored at the leaf?
+  - how do i find a specific character or substring?
+- API ideas for the text buffer
+  - get()
+  - push()
+  - pop_n()
+- cursor needs to have screen position + buffer position
+- custom editor functions all have the same signature (lets you use function
+  pointers) and they accept a context to the editor state (which will be broken
+  up into things that need to be in the public context and things that donut)
+#+BEGIN_SRC c
+typedef void (*)(EditorContext* ctx) EditorFunction;
+#+END_SRC
+
 * OOF
 ** opengl
 *VBO*: Vertex Buffer Object. This is the handle to a chunk of GPU memory. 

@@ -4,10 +4,11 @@ void glfw_error_callback(int code, const char* msg) {
 
 void glfw_resize_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
-	g_viewport.x = width;
-	g_viewport.y = height;
-
-	load_char_info_screen();
+	EditorContext* ctx = td_ctx();
+	IVec2 viewport;
+	viewport.x = width;
+	viewport.y = height;
+	td_ctx_viewport_callback(ctx, viewport);
 }
 
 

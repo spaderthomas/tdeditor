@@ -11,8 +11,6 @@ uint32 g_VBO;
 uint32 EBO;
 uint32 g_texture;
 
-IVec2 g_viewport = { 800, 600 };
-float g_max_char_height;
 void TDNS_LOG(const char* str) {
 	printf("%s", str);
 }
@@ -96,12 +94,18 @@ void tdstr_maybe_grow(tdstr* string) {
 
 	}
 }
+
 void tdstr_push(tdstr* string, char c) {
 	tdstr_maybe_grow(string);
-	string->buf[string->len++] = c;
+	string->buf[string->len] = c;
+	string->len++;
 	string->buf[string->len] = 0;
 }
 
+void tdstr_pop(tdstr* string) {
+	string->len--;
+	string->buf[string->len] = 0;
+}
 
 struct Config {
 	char** keys;
@@ -151,4 +155,10 @@ char* get_conf(char* key) {
 
 	return NULL;
 }
+
+typedef struct ScreenInfo {
+	IVec2 viewport;
+	float max_char_height;
+} ScreenInfo;
+
 

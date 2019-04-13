@@ -10,16 +10,24 @@
 #include "stretchy_buffer.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#define STB_DS_IMPLEMENTATION
+#include "stb_ds.h"
 
 #include "data_types.h"
 #include "utils.h"
+#include "font.h"
+#include "editor.h"
 #include "draw.h"
 #include "input.h"
 #include "glfw_callbacks.h"
 
+#include "editor_impl.h"
+#include "font_impl.h"
+
 int main(int argc, char** argv) {
 	load_config(&g_config);
-
+	EditorContext* ctx = td_ctx();
+	
 	// GLFW init
 	glfwSetErrorCallback(glfw_error_callback);
 
@@ -45,7 +53,6 @@ int main(int argc, char** argv) {
 		return -1;
 	}    
 
-	glViewport(0, 0, 800, 600);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
@@ -54,7 +61,7 @@ int main(int argc, char** argv) {
 	if (flags & GL_CONTEXT_FLAG_DEBUG_BIT) {
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-		//glDebugMessageCallbackKHR(gl_debug_callback, NULL);
+		glDebugMessageCallbackKHR(gl_debug_callback, NULL);
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
 	}
 	
@@ -104,70 +111,33 @@ int main(int argc, char** argv) {
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	// Set up our global data structures
-	FreeType_Init();
+	load_default_font(ctx);
 	fill_shift_map();
 
-	// Some test vertices
-	Vertex top_right = {
-		{0.0f, 0.0f},
-		{0.f, 0.f, 0.f},
-		{1.f, 0.f}
-	};
-	Vertex bottom_right = {
-		{.0f, -1.f},
-		{0.f, 0.f, 0.f},
-		{1.f, 1.f}
-	};
-	Vertex bottom_left = {
-	    {-1.f, -1.f},
-	    {0.f, 0.f, 0.f},
-	    {0.f, 1.f}
-	};
-	Vertex top_left = {
-	    {-1.f, 0.f},
-	    {0.f, 0.f, 0.f},
-	    {0.f, 0.f}
-	};
-
-	Vertex test_vertices[4] = {
-		top_right,
-		bottom_right,
-		bottom_left,
-		top_left
-	};
-
-	uint32 square_indices[6] = {
-		0, 1, 3,
-		1, 2, 3
-	};
-
-	uint32 ur_triangle_indices[3] = {
-		0, 1, 3,
-	};
-
-	uint32 ll_triangle_indices[3] = {
-		1, 2, 3,
-	};
-
-	Draw_List draw_list = {0};
+	glfwSetWindowSize(window, 800, 600);
 
 	tdstr input_buffer;
 	tdstr_init(&input_buffer);
 	float r = .5, g = .7, b = .9, a = 1;
+
+	float seconds_per_update = 1.f / 60.f;
+
 	while (!glfwWindowShouldClose(window)) {
+		double frame_start_time = glfwGetTime();
+
         glfwPollEvents();
 
 		glClearColor(r, g, b, a);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		send_input(&input_buffer);
-		dl_push_text(&draw_list, input_buffer.buf);
-		
-		dl_render(&draw_list);
-		dl_reset(&draw_list);
+		update(ctx);
+		render(ctx);
+		next_frame(ctx);
 		
  		glfwSwapBuffers(window);
 		reset_input();
+
+		while (glfwGetTime() - frame_start_time < seconds_per_update) {}
 	}
 	
 	printf("hahahahahaahahah!");

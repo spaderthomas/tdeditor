@@ -109,107 +109,22 @@ void shader_setup(Shader_Info* info) {
 	}
 }
 
-// Text rendering
-struct Character {
-	uint32 texture;
-	Vec2 size;
-	Vec2 bearing;
-	float advance;
-};
-typedef struct Character Character;
-
-#define COUNT_ASCII 128
-
-// In raw pixel units; use these to recalculate when the viewport changes
-Character px_char_infos[COUNT_ASCII] = {0};
-// Call this once to generate a texture for each character and mark the
-// pixel values that define the character
-void load_char_info_px(FT_Face face) {
-	for (char c = ' '; c <= '~'; c++) {
-		if (FT_Load_Char(face, c, FT_LOAD_RENDER)) {
-			char* error_msg = malloc(64 * sizeof(char));
-			sprintf(error_msg, "FreeType failed to load character: %c", c);
-			TDNS_LOG(error_msg);
-		}
-
-		Character* px_char_info = px_char_infos + c;
-		glGenTextures(1, &px_char_info->texture);
-		glBindTexture(GL_TEXTURE_2D, px_char_info->texture);
-		glTexImage2D(GL_TEXTURE_2D,
-					 0,
-					 GL_RED,
-					 face->glyph->bitmap.width, face->glyph->bitmap.rows,
-					 0,
-					 GL_RED,
-					 GL_UNSIGNED_BYTE,
-					 face->glyph->bitmap.buffer);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		px_char_info->size.x = face->glyph->bitmap.width;
-		px_char_info->size.y = face->glyph->bitmap.rows;
-		px_char_info->bearing.x = face->glyph->bitmap_left;
-		px_char_info->bearing.y = face->glyph->bitmap_top;
-		px_char_info->advance = (float)face->glyph->advance.x / 64; // FT stores this in 1/64 pixel increments
-
-		g_max_char_height = max(g_max_char_height, px_char_info->size.y);
-	}
-}
-
-Character char_infos[COUNT_ASCII] = {0};
-// Convenience: Translate the pixel values that FreeType gives us into
-// screen coordinates. Call this function when the viewport changes
-void load_char_info_screen() {
-	for (char c = ' '; c <= '~'; c++) {
-		Character* px_char_info = px_char_infos + c;
-		Character* char_info = char_infos + c;
-		
-		char_info->texture = px_char_info->texture;
-		char_info->size.x = px_char_info->size.x / (float)g_viewport.x;
-		char_info->size.y = px_char_info->size.y / (float)g_viewport.y;
-		char_info->bearing.x = px_char_info->bearing.x / (float)g_viewport.x;
-		char_info->bearing.y = px_char_info->bearing.y / (float)g_viewport.y;
-		char_info->advance = px_char_info->advance / (float)g_viewport.x;
-	}
-}
-
-
-void FreeType_Init() {
-	FT_Library ft;
-	if (FT_Init_FreeType(&ft)) {
-		TDNS_LOG("Error initializing FreeType");
-	}
-	
-	FT_Face face;
-	char* font_path = td_strcat(get_conf("font_dir"), get_conf("font_default"));
-	if (FT_New_Face(ft, font_path, 0, &face)) {
-		TDNS_LOG("Error loading font");
-	}
-
-	FT_Set_Pixel_Sizes(face, 0, 48);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-	load_char_info_px(face);
-	load_char_info_screen();
-}
-
-
-typedef struct Draw_Command {
-	uint32 elem_count;
+typedef struct DrawCommand {
+	uint32 count_elems;
+	uint32 count_verts;
 	Shader_Info shader_info;
-} Draw_Command;
+	GLenum mode;
+} DrawCommand;
 
-typedef struct Draw_List {
+// All of the buffers are stretchy_buffers 
+typedef struct DrawList {
 	Vertex* vertex_buffer;
 	uint32* element_buffer;
-	Draw_Command* command_buffer;
+	DrawCommand* command_buffer;
 	uint32 last_texture;
-} Draw_List;
+} DrawList;
 
-void dl_render(Draw_List* draw_list) {
+void dl_render(DrawList* draw_list) {
 	glBindVertexArray(g_VAO);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, g_VBO);
@@ -227,23 +142,23 @@ void dl_render(Draw_List* draw_list) {
 	uint64 elements_drawn = 0; // 64 bits because must cast to a GLvoid*
 	draw_list->last_texture = 0;
 	fox_for(idx, sb_count(draw_list->command_buffer)) {
-		Draw_Command* cmd = draw_list->command_buffer + idx;
+		DrawCommand* cmd = draw_list->command_buffer + idx;
 		shader_setup(&cmd->shader_info);
 
-		glDrawElements(GL_TRIANGLES, cmd->elem_count, GL_UNSIGNED_INT, (GLvoid*)(elements_drawn * sizeof(uint32)));
+		glDrawElements(cmd->mode, cmd->count_elems, GL_UNSIGNED_INT, (GLvoid*)(elements_drawn * sizeof(uint32)));
 
-		elements_drawn += cmd->elem_count;
+		elements_drawn += cmd->count_elems;
 	}
 }
 
-void dl_reset(Draw_List* draw_list) {
+void dl_reset(DrawList* draw_list) {
 	sb_clear(draw_list->command_buffer);
 	sb_resetn(draw_list->vertex_buffer);
 	sb_resetn(draw_list->element_buffer);
 }
 
 // Copies the elements pointed to into the draw list's vertex buffer
-void dl_push_elements(Draw_List* draw_list, uint32* elements, uint32 count) {
+void dl_push_elements(DrawList* draw_list, uint32* elements, uint32 count) {
 	uint32 vert_idx = sb_count(draw_list->vertex_buffer) ?
 		sb_count(draw_list->vertex_buffer) :
 		0;
@@ -253,82 +168,19 @@ void dl_push_elements(Draw_List* draw_list, uint32* elements, uint32 count) {
 }
 
 // Copies the vertices pointed to into the draw list's vertex buffer
-void dl_push_vertices(Draw_List* draw_list, Vertex* verts, uint32 count) {
+void dl_push_vertices(DrawList* draw_list, Vertex* verts, uint32 count) {
 	fox_for(idx, count) {
 		sb_push(draw_list->vertex_buffer, verts[idx]);
 	}
 }
 
-void dl_push_primitive(Draw_List* draw_list,
-					   Vertex* vertices, uint32 count_verts,
-					   uint32* elements, uint32 count_elems,
-					   Draw_Command* cmd) {
-	dl_push_elements(draw_list, elements, count_elems);
-	dl_push_vertices(draw_list, vertices, count_verts);
+// Base level function. Only provided so you never forget that you must push
+// elements first to get the proper offset for vertices!
+void dl_push_primitive(DrawList* draw_list,
+					   Vertex* vertices, uint32* elements,
+					   DrawCommand* cmd) {
+	dl_push_elements(draw_list, elements, cmd->count_elems);
+	dl_push_vertices(draw_list, vertices, cmd->count_verts);
 	sb_push(draw_list->command_buffer, *cmd);
 }
 
-void dl_push_text(Draw_List* draw_list, char* text) {
-	if (!text) return;
-
-	float screen_max_char_height = g_max_char_height / g_viewport.y;
-	Vec2 point = { -1.f, 1.f - screen_max_char_height };
-	uint32 len = strlen(text);
-	fox_for(idx, len) {
-		char c = text[idx];
-		Character* char_info = &char_infos[c];
-		
-		// Make a rectangle:
-		float bottom = point.y - char_info->size.y + char_info->bearing.y;
-		float top = point.y + char_info->bearing.y;
-		float left = point.x + char_info->bearing.x;
-		float right = point.x + char_info->bearing.x + char_info->size.x;
-
-		Vertex bottom_left = {
-		   {left, bottom},
-		   {1.f, 1.f, 1.f},
-		   {0.f, 1.f}
-		};
-		Vertex bottom_right = {
-			{right, bottom},
-			{1.f, 1.f, 1.f},
-			{1.f, 1.f}
-		};
-		Vertex top_left = {
-    		{left, top},
-	    	{1.f, 1.f, 1.f},
-    		{0.f, 0.f}
-		};
-		Vertex top_right = {
-		    {right, top},
-		    {1.f, 1.f, 1.f},
-		    {1.f, 0.f}
-		};
-
-		Vertex verts[4] = {
-		    top_right,
-		    bottom_right,
-		    bottom_left,
-		    top_left
-	    };
-		
-	    uint32 indices[6] = {
-	    	0, 1, 3,
-	    	1, 2, 3
-    	};
-		
-		Draw_Command draw_cmd;
-		draw_cmd.elem_count = 6;
-		make_text_shader_info(shader_info);
-		shader_info.text.texture = char_info->texture;
-		draw_cmd.shader_info = shader_info;
-
-		dl_push_primitive(draw_list, verts, 4, indices, 6, &draw_cmd);
-
-		point.x += char_info->advance;
-		if (point.x > 1) {
-			point.x = -1;
-			point.y -= g_max_char_height / (float)g_viewport.y;
-		}
-	}
-}

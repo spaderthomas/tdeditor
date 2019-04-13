@@ -73,15 +73,18 @@ bool is_shift_down() {
 
 // Applies modifiers and then sends the characters to the display buffer
 void send_input(tdstr* buffer) {
+	EditorContext* ctx = td_ctx();
+	
 	// Have to handle this loop in three contiguous segments:
 	// 1. All the keys before letters
 	for(int key = GLFW_KEY_SPACE; key <= GLFW_KEY_EQUAL; key++) {
 		if (was_pressed(key)) {
 			if (is_shift_down()) {
 				tdstr_push(buffer, shift_map[key]);
+				ctx->cursor_idx++;
 			} else {
 				tdstr_push(buffer, key);
-				
+				ctx->cursor_idx++;
 			}
 		}
 	}
@@ -92,10 +95,12 @@ void send_input(tdstr* buffer) {
 			// Upper case
 			if (is_shift_down()) {
 				tdstr_push(buffer, key);
+				ctx->cursor_idx++;
 			}
 			// Lower case
 			else {
 				tdstr_push(buffer, key + 32);
+				ctx->cursor_idx++;
 				
 			}
 		}
@@ -106,12 +111,17 @@ void send_input(tdstr* buffer) {
 		if (was_pressed(key)) {
 			if (is_shift_down()) {
 				tdstr_push(buffer, shift_map[key]);
+				ctx->cursor_idx++;
 			} else {
 				tdstr_push(buffer, key);
+				ctx->cursor_idx++;
 				
 			}
 		}
 	}
+
+	if (was_pressed(GLFW_KEY_ENTER)) tdstr_push(buffer, '\n');
+	if (was_pressed(GLFW_KEY_BACKSPACE)) tdstr_pop(buffer);
 
 }
 
