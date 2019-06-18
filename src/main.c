@@ -130,9 +130,9 @@ int main(int argc, char** argv) {
 		glClearColor(r, g, b, a);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		update(ctx);
-		render(ctx);
-		next_frame(ctx);
+		update();
+		render();
+		next_frame();
 		
  		glfwSwapBuffers(window);
 		reset_input();

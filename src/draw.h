@@ -184,3 +184,78 @@ void dl_push_primitive(DrawList* draw_list,
 	sb_push(draw_list->command_buffer, *cmd);
 }
 
+void dl_push_rect(DrawList* draw_list,
+				  float top, float bottom, float left, float right,
+				  DrawCommand* cmd) {
+	cmd->count_elems = 6;
+	cmd->count_verts = 4;
+	cmd->mode = GL_TRIANGLES;
+
+	Vertex bottom_left = {
+		left, bottom,
+		1.f, 1.f, 1.f,
+		0.f, 1.f
+	};
+	Vertex bottom_right = {
+		right, bottom,
+		1.f, 1.f, 1.f,
+		1.f, 1.f
+	};
+	Vertex top_left = {
+		left, top,
+		1.f, 1.f, 1.f,
+		0.f, 0.f
+	};
+	Vertex top_right = {
+		right, top,
+		1.f, 1.f, 1.f,
+		1.f, 0.f
+	};
+
+	Vertex verts[4] = {
+		top_right,
+		bottom_right,
+		bottom_left,
+		top_left
+	};
+		
+	uint32 elements[6] = {
+		0, 1, 3,
+		1, 2, 3
+	};
+
+	dl_push_primitive(draw_list, verts, elements, cmd);
+}
+
+void dl_push_line(DrawList* draw_list,
+			 Vec2 a, Vec2 b,
+			 DrawCommand* cmd) {
+	cmd->count_elems = 2;
+	cmd->count_verts = 2;
+	cmd->mode = GL_LINES;
+
+	Vertex cursor_top = {
+		a,
+		0.f, 0.f, 0.f,
+		1.f, 0.f
+	};
+	
+	Vertex cursor_bottom = {
+							b,
+		0.f, 0.f, 0.f,
+		1.f, 1.f
+	};
+	
+	Vertex verts[2] = {
+		cursor_top,
+		cursor_bottom
+	};
+	
+	uint32 elements[2] = {
+		0, 1
+	};
+
+			
+	dl_push_primitive(draw_list, verts, elements, cmd);
+}
+							   

@@ -14,9 +14,8 @@ typedef struct EditorContext {
 
 EditorContext* td_ctx();
 void td_ctx_viewport_callback(EditorContext* ctx, IVec2 viewport);
-void update(EditorContext* ctx);
-void render(EditorContext* ctx);
-void next_frame(EditorContext* ctx);
-void draw_cursor(EditorContext* ctx);
+void update();
+void render();
+void next_frame();
 void draw_text(EditorContext* ctx);
 void register_font(EditorContext* ctx, char* font_path);
