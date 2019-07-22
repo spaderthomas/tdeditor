@@ -12,7 +12,7 @@ uint32 EBO;
 uint32 g_texture;
 
 void TDNS_LOG(const char* str) {
-	printf("%s", str);
+	printf("%s\n", str);
 }
 
 bool is_upper(char c) {
@@ -143,9 +143,15 @@ Config g_config = {0};
 
 
 void load_config() {
+	#ifdef WIN32
 	FILE* config_file = fopen("C:/Programming/tdeditor/src/tded.conf", "r");
+	#endif
+	#ifndef WIN32
+	FILE* config_file = fopen("/Ussssers/thspader/Programming/tdeditor/src/tded.conf", "r");
+	#endif
 	if (!config_file) {
 		TDNS_LOG("Error opening the config file.");
+		exit(0);
 	}
 	char* config_source = file_contents(config_file);
 

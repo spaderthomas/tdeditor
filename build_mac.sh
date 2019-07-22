@@ -3,7 +3,7 @@ mkdir build > /dev/null 2>&1
 cd build
 
 echo "...building tdeditor"
-/usr/local/Cellar/gcc/8.3.0/bin/gcc-8 -g \
+/usr/local/Cellar/gcc/9.1.0/bin/gcc-9 -g \
 -Wall -Wno-char-subscripts -Wno-unused-variable -Wno-missing-braces -Wno-unused-result \
 ../src/*.c \
 -I../include \
