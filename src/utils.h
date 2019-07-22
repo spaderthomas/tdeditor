@@ -15,6 +15,21 @@ void TDNS_LOG(const char* str) {
 	printf("%s", str);
 }
 
+bool is_upper(char c) {
+	return c >= 'A' && c <= 'Z';
+}
+
+bool is_lower(char c) {
+	return c >= 'a' && c <= 'z';
+}
+
+char char_lower(char c) {
+	return c + 32;
+}
+
+char char_upper(char c) {
+	return c - 32;
+}
 // Returns the length of the string in bytes
 uint32 file_length(FILE* file) {
 	fseek(file, 0, SEEK_END);
@@ -88,10 +103,8 @@ void tdstr_init(tdstr* string) {
 
 void tdstr_maybe_grow(tdstr* string) {
 	if (string->len == string->cap) {
-		// Double the buffer for the string
 		string->cap *= 2;
 		string->buf = realloc(string->buf, (string->cap + 1) * sizeof(char));
-
 	}
 }
 
@@ -107,6 +120,20 @@ void tdstr_pop(tdstr* string) {
 	string->buf[string->len] = 0;
 }
 
+void tdstr_insert(tdstr* string, char c, int i) {
+	if (i == string->len) return tdstr_push(string, c);
+	if (i > string->len) return;
+	if (i < 0) return;
+	
+	tdstr_maybe_grow(string);
+	memcpy(string->buf + i,      // copy from the byte you want to insert
+		   string->buf + i + 1,  // move it one byte down
+		   string->len - i);     // do it for the whole rest of the string
+	string->buf[i] = c;
+	string->len++;
+	string->buf[string->len] = 0;
+}
+
 struct Config {
 	char** keys;
 	char** values;
@@ -116,7 +143,7 @@ Config g_config = {0};
 
 
 void load_config() {
-	FILE* config_file = fopen("/Users/thspader/Programming/tdeditor/src/tded.conf", "r");
+	FILE* config_file = fopen("C:/Programming/tdeditor/src/tded.conf", "r");
 	if (!config_file) {
 		TDNS_LOG("Error opening the config file.");
 	}

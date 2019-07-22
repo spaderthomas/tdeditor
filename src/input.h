@@ -54,6 +54,7 @@ void fill_shift_map() {
 	shift_map['/']  =  '?';
 	shift_map[' ']  =  ' ';
 }
+
 // Since the GLFW callback handles marking is_down to be false, we
 // don't need to reset them. Just have to make sure to mark when is_down
 // values weren't input this frame
@@ -67,61 +68,40 @@ bool was_pressed(int key) {
 	return g_input.is_down[key] && !g_input.was_down[key];
 }
 
+bool is_key_down(int key) {
+	return g_input.is_down[key];
+}
+
 bool is_shift_down() {
 	return g_input.is_down[GLFW_KEY_LEFT_SHIFT] || g_input.is_down[GLFW_KEY_RIGHT_SHIFT];
 }
 
-// Applies modifiers and then sends the characters to the display buffer
-void send_input(tdstr* buffer) {
-	EditorContext* ctx = td_ctx();
-	
-	// Have to handle this loop in three contiguous segments:
-	// 1. All the keys before letters
-	for(int key = GLFW_KEY_SPACE; key <= GLFW_KEY_EQUAL; key++) {
-		if (was_pressed(key)) {
-			if (is_shift_down()) {
-				tdstr_push(buffer, shift_map[key]);
-				ctx->cursor_idx++;
-			} else {
-				tdstr_push(buffer, key);
-				ctx->cursor_idx++;
-			}
-		}
-	}
-
-	// 2. Characters, so we can subtract off to get lower case
-	for(int key = GLFW_KEY_A; key <= GLFW_KEY_Z; key++) {
-		if (was_pressed(key)) {
-			// Upper case
-			if (is_shift_down()) {
-				tdstr_push(buffer, key);
-				ctx->cursor_idx++;
-			}
-			// Lower case
-			else {
-				tdstr_push(buffer, key + 32);
-				ctx->cursor_idx++;
-				
-			}
-		}
-	}
-
-	// 3. All the keys after letters
-	for(int key = GLFW_KEY_LEFT_BRACKET; key <= GLFW_KEY_GRAVE_ACCENT; key++) {
-		if (was_pressed(key)) {
-			if (is_shift_down()) {
-				tdstr_push(buffer, shift_map[key]);
-				ctx->cursor_idx++;
-			} else {
-				tdstr_push(buffer, key);
-				ctx->cursor_idx++;
-				
-			}
-		}
-	}
-
-	if (was_pressed(GLFW_KEY_ENTER)) tdstr_push(buffer, '\n');
-	if (was_pressed(GLFW_KEY_BACKSPACE)) tdstr_pop(buffer);
-
+bool was_ctrl_pressed() {
+	return was_pressed(GLFW_KEY_LEFT_CONTROL) || was_pressed(GLFW_KEY_RIGHT_CONTROL);
 }
 
+bool is_ctrl_down() {
+	return g_input.is_down[GLFW_KEY_LEFT_CONTROL] || g_input.is_down[GLFW_KEY_RIGHT_CONTROL];
+}
+
+bool is_meta_down() {
+	return g_input.is_down[GLFW_KEY_LEFT_ALT] || g_input.is_down[GLFW_KEY_RIGHT_ALT];
+}
+
+bool is_mod_key_down(ModKey key) {
+	if (key == Mod_NONE) {
+		return true;
+	}
+	else if (key == Mod_CONTROL) {
+		return is_ctrl_down();
+	}
+	else if (key == Mod_META) {
+		return is_meta_down();
+	}
+	
+	return false;
+}
+
+bool is_any_mod_key_down() {
+	return is_ctrl_down() || is_meta_down();
+}

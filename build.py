@@ -82,8 +82,7 @@ class tdbuild():
 
 if __name__ == "__main__":
     builder = tdbuild()
-    
-    if not len(sys.argv) or sys.argv[1] == "build":
+    if len(sys.argv) is 1 or sys.argv[1] == "build":
         builder.build()
     elif sys.argv[1] == "run":
         builder.run()

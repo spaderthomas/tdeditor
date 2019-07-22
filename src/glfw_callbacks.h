@@ -4,11 +4,18 @@ void glfw_error_callback(int code, const char* msg) {
 
 void glfw_resize_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
-	EditorContext* ctx = td_ctx();
+	EditorState* ctx = get_editor_state();
 	IVec2 viewport;
 	viewport.x = width;
 	viewport.y = height;
-	td_ctx_viewport_callback(ctx, viewport);
+
+	// Match the context's viewport with the new value
+	ctx->screen_info.viewport = viewport;
+
+	// Remap the pixel values of loaded font into screen values
+	FontInfo* font_info = shget(ctx->fonts, get_conf("font_default"));
+	load_char_info_screen(font_info);
+
 }
 
 

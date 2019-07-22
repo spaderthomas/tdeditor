@@ -1,21 +1,49 @@
 struct DrawList;
 typedef struct DrawList DrawList;
 
-typedef struct EditorContext {
+struct Mode;
+typedef struct Mode Mode;
+
+typedef struct EditorState {
 	int frame;
-	tdstr contents;
 	int cursor_idx;
 
-	ScreenInfo screen_info;
-	FontMap* fonts;
+	tdstr contents;
+	
+	ScreenInfo screen_info;  
+	FontMap* fonts;           // string hash map
 
-	DrawList* draw_list;
-} EditorContext;
+	Mode** modes;             // stretchy buffer
+	DrawList* draw_list;      
+} EditorState;
 
-EditorContext* td_ctx();
-void td_ctx_viewport_callback(EditorContext* ctx, IVec2 viewport);
+// GLFW doesn't have a generic for either of these. If a command defines its mod key as
+// Mod_NONE, left or right control will work for it
+typedef enum ModKey {
+	Mod_NONE,
+	Mod_CONTROL,
+	Mod_META,
+} ModKey;
+
+typedef struct Command {
+	unsigned short key;
+	ModKey mod;
+	void (*func) (EditorState*);
+} Command;
+
+typedef struct Mode {
+	const char* name;
+	Command** commands; // stretchy buffer
+} Mode;
+
+#define CMD(key, mod, fn) { key, mod, fn }
+
+EditorState* get_editor_state();
 void update();
 void render();
 void next_frame();
-void draw_text(EditorContext* ctx);
-void register_font(EditorContext* ctx, char* font_path);
+void draw_text(EditorState* ctx);
+void handle_input(tdstr* buffer);
+
+void register_mode(EditorState* state, Mode* mode);
+void register_cmd(Mode* mode, Command* cmd);

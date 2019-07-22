@@ -17,6 +17,7 @@
 #include "utils.h"
 #include "font.h"
 #include "editor.h"
+#include "modes.h"
 #include "draw.h"
 #include "input.h"
 #include "glfw_callbacks.h"
@@ -26,7 +27,7 @@
 
 int main(int argc, char** argv) {
 	load_config(&g_config);
-	EditorContext* ctx = td_ctx();
+	EditorState* ctx = get_editor_state();
 	
 	// GLFW init
 	glfwSetErrorCallback(glfw_error_callback);
@@ -121,6 +122,9 @@ int main(int argc, char** argv) {
 	float r = .5, g = .7, b = .9, a = 1;
 
 	float seconds_per_update = 1.f / 60.f;
+
+	text_mode_init();
+	
 
 	while (!glfwWindowShouldClose(window)) {
 		double frame_start_time = glfwGetTime();
