@@ -28,13 +28,13 @@ void TD_LOG2(const char* str, uint16 flags) {
 	}
 }
 
-void TD_LOG_ARR(const char** sb) {
+void TD_LOG_ARR(char** sb) {
 	fox_for(i, sb_count(sb)) {
 		TD_LOG(sb[i]);
 	}
 }
 
-void TD_LOG_ARR2(const char** sb, uint16 flags) {
+void TD_LOG_ARR2(char** sb, uint16 flags) {
 	fox_for(i, sb_count(sb)) {
 		TD_LOG2(sb[i], flags);
 	}
@@ -181,7 +181,7 @@ void load_config() {
 	#ifdef _WIN32
 	FILE* config_file = fopen("C:/Programming/tdeditor/src/tded.conf", "r");
 	#else
-	FILE* config_file = fopen("/Ussssers/thspader/Programming/tdeditor/src/tded.conf", "r");
+	FILE* config_file = fopen("/Users/thspader/Programming/tdeditor/src/tded.conf", "r");
 	#endif
 	if (!config_file) {
 		TD_LOG("Error opening the config file.");

@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
 	tdstr_remove(&str, 1);
 	printf("td_str test: removing 'b' from position 1: %s\n", str.buf);
 	
-	load_config(&g_config);
+	load_config();
 	EditorState* ctx = get_editor_state();
 	
 	// GLFW init

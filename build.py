@@ -1,87 +1,172 @@
-import os, subprocess, sys, shutil
+import os, subprocess, sys, shutil, platform, colorama
+
+colorama.init()
+
+build_options = {
+    'source_dir': os.path.join("..", "src"),
+    'include_dirs': [
+        os.path.join("..", "include"),
+        os.path.join("..", "assets"),
+        os.path.join("..", "assets", "shaders")
+    ],
+    'lib_dir': os.path.join("..", "lib"),
+    'build_dir': "build",
+    'source_files': [
+        "main.c",
+        "glad.c"
+    ],
+    'debug': True,
+    'cpp': False,
+    'Windows': {
+        'system_libs': ["user32.lib", "opengl32.lib","gdi32.lib","Shell32.lib"],
+        'user_libs': ["glfw3.lib", "freetyped.lib"],
+        'ignore': ["4099"],
+        'out': "tdeditor.exe",
+        'runtime_library': "MTd",
+    },
+    'Darwin': {
+        'compiler': 'gcc',
+        'user_libs': ['libfreetype.a', 'libglfw3.a'],
+        'system_libs': ['bz2', 'z'],
+        'frameworks': ['Cocoa', 'OpenGL', 'CoreVideo', 'IOKit'],
+        'out': 'tdeditor',
+        'switches': [
+            'Wall',
+            'Wno-char-subscripts',
+            'Wno-unused-variable',
+            'Wno-missing-braces',
+            'Wno-unused-result'
+        ]
+    }
+}
+
+def make_cd_build_dir():
+    build_dir = os.path.join(os.getcwd(), build_options['build_dir'])
+    try:
+        os.mkdir(build_dir)
+    except:
+        pass
+    os.chdir(build_dir)
 
 class tdbuild():
-    def __init__(self):
-        self.source_dir = os.path.join("..", "src")
-        self.include_dirs = [
-            os.path.join("..", "include"),
-            os.path.join("..", "assets"),
-            os.path.join("..", "assets", "shaders")
-        ]
-        self.lib_dir = os.path.join("..", "lib")
-        self.build_dir = "build"
-        
-        self.system_libs = ["user32.lib", "opengl32.lib","gdi32.lib","Shell32.lib"]
-        self.user_libs = ["glfw3.lib", "freetyped.lib"]
-        
-        self.source_files = ["main.c", "glad.c"]
-        self.ignore = ["4099"]
-        self.out = "tdeditor.exe"
-        self.runtime_library = "MTd"
-        self.debug = True
-        self.cpp = False
-        
+    def __init__(self):        
         self.build_cmd = ""
+        self.unix_args = []
 
     def push(self, item):
         self.build_cmd = self.build_cmd + item + " "
+        
 
     def build(self):
-        print("Building from", os.getcwd())
+        if platform.system() == 'Windows':
+            self.build_windows()
+        elif platform.system() == 'Darwin':
+            self.build_mac()
+        
+    def build_mac(self):
+        print("...building from", os.getcwd())
+
+        # Find the path to the compiler using 'which'
+        compiler = build_options['Darwin']['compiler']
+        process = subprocess.Popen(['which', compiler], stdout=subprocess.PIPE)
+        compiler_path, err = process.communicate()
+        compiler_path = compiler_path.decode('UTF-8').strip()
+        if err:
+            print(colorama.Fore.RED + '[ERROR]')
+            print(colorama.Fore.RED + "which {} errored out, so not sure what's up with that".format(compiler))
+            
+        self.push(compiler_path)
+        
+        if build_options['debug']:
+            self.push("-g")
+
+        for switch in build_options['Darwin']['switches']:
+            self.push("-" + switch)
+
+        for source in build_options['source_files']:
+            self.push(os.path.join(build_options['source_dir'], source))
+
+        for include in build_options['include_dirs']:
+            self.push("-I" + include)
+
+        for lib in build_options['Darwin']['user_libs']:
+            self.push(os.path.join(build_options['lib_dir'], lib))
+
+        for lib in build_options['Darwin']['system_libs']:
+            self.push('-l' + lib)
+
+        for framework in build_options['Darwin']['frameworks']:
+            self.push('-framework ' + framework)
+
+        self.push('-o ' + build_options['Darwin']['out'])
+        
+        print("...generated compiler command:")
+        print(self.build_cmd)
+        print("...building")
+
+        # Run the command you just generated. Use os.system() because
+        # subprocess.run() wants a list but doesn't play nice with it!
+        make_cd_build_dir()
+        os.system(self.build_cmd)
+
+        print(colorama.Fore.GREEN + "[BUILD SUCCESSFUL]")
+        
+    def build_windows(self):
+        print("...building from", os.getcwd())
         
         self.push("cl.exe")
 
-        if self.cpp:
+        if build_options['cpp']:
             self.push("/TP")
         else:
             self.push("/TC")
 
-        if self.debug :
+        if build_options['debug']:
             self.push("-Zi")
 
-        self.push("-" + self.runtime_library)
+        self.push("-" + build_options['Windows']['runtime_library'])
 
-        for source_file in self.source_files:
+        for source_file in build_options['source_files']:
             full_source_file_path = os.path.join(self.source_dir, source_file)
             self.push(full_source_file_path)
 
-        for include_dir in self.include_dirs:
+        for include_dir in build_options['include_dirs']:
             self.push('/I\"{}\"'.format(include_dir))
 
         self.push("/link")
-        for system_lib in self.system_libs:
+        for system_lib in build_options['Windows']['system_libs']:
             self.push(system_lib)
 
-        for user_lib in self.user_libs:
-            self.push(os.path.join(self.lib_dir, user_lib))
+        for user_lib in build_options['Windows']['user_libs']:
+            self.push(os.path.join(build_options['lib_dir'], user_lib))
             
-        for ignore in self.ignore:
+        for ignore in build_options['Windows']['ignore']:
             self.push("/ignore:" + ignore)
 
         self.push("/out:" + self.out)
 
-        build_dir = os.path.join(os.getcwd(), self.build_dir)
-        try:
-            os.mkdir(build_dir)
-        except:
-            pass
-        os.chdir(build_dir)
+        make_cd_build_dir()
+        
+        print("...generated compiler command:")
+        print(self.build_cmd)
+        print("...building")
         
         # @hack: is there a better way to keep a process open?
-        print(self.build_cmd)
         subprocess.run("{} && {}".format(\
-            os.path.join("..", "setup_devenv.bat"),
-            self.build_cmd))
+            os.path.join("..", "setup_devenv.bat"), self.build_cmd))
 
         os.chdir("..")
+        print(colorama.Fore.GREEN + "[BUILD SUCCESSFUL]")
+
         
     def run(self):
         os.chdir(os.path.dirname(os.path.realpath(__file__)))
-        subprocess.run([os.path.join(os.getcwd(), self.build_dir, self.out)])
+        subprocess.run([os.path.join(os.getcwd(), build_options['build_dir'], build_options[platform.system()]['out'])]) 
                  
 
 if __name__ == "__main__":
     builder = tdbuild()
+    
     if len(sys.argv) is 1 or sys.argv[1] == "build":
         builder.build()
     elif sys.argv[1] == "run":
