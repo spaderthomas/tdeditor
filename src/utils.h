@@ -4,6 +4,15 @@
 #define tdmax(a, b) ((a) > (b) ? (a) : (b))
 #define tdmin(a, b) ((a) < (b) ? (a) : (b))
 
+typedef uint8_t        uint8;
+typedef int8_t         int8;
+typedef unsigned short uint16;
+typedef uint32_t       uint32;
+typedef int32_t        int32;
+typedef uint64_t       uint64;
+typedef unsigned char  uchar;
+typedef uint32_t       bool;
+
 // Globals
 uint32 g_VAO;
 uint32 g_VBO;
@@ -83,6 +92,29 @@ char* td_strcat(char* first, char* second) {
 	
 	return buf;
 }
+
+typedef struct IVec2 {
+	uint32 x;
+	uint32 y;
+} IVec2;
+
+typedef struct Vec2 {
+	float x;
+	float y;
+} Vec2;
+
+typedef struct Vec3 {
+	float x;
+	float y;
+	float z;
+} Vec3;
+
+typedef struct Vertex {
+	Vec2 pos;
+	Vec3 color;
+	Vec2 uv;
+} Vertex;
+
 
 // dumb stretchy buffer: a mod of sean barrett's stretchy buffer that lets you push
 // arbitrarily typed data to the same buffer. and since it's dumb, it keeps no metadata
@@ -179,7 +211,7 @@ Config g_config = {0};
 
 void load_config() {
 	#ifdef _WIN32
-	FILE* config_file = fopen("C:/Programming/tdeditor/src/tded.conf", "r");
+	FILE* config_file = fopen(conf, "r");
 	#else
 	FILE* config_file = fopen("/Users/thspader/Programming/tdeditor/src/tded.conf", "r");
 	#endif

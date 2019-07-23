@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdint.h>
+
 #ifndef _WIN32
-#include <unistd.h>
+#include "unix.h"
 #else
-#define STDOUT_FILENO 1
-#define STDERR_FILENO 2
+#include "win32.h"
 #endif
 
 #include "glad/glad.h"
@@ -19,7 +19,8 @@
 #define STB_DS_IMPLEMENTATION
 #include "stb_ds.h"
 
-#include "data_types.h"
+#define TD_BUFFER_RAW_STRING
+
 #include "utils.h"
 #include "font.h"
 #include "editor.h"

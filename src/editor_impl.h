@@ -176,6 +176,7 @@ void register_cmd(Mode* mode, Command* cmd) {
 		cmd->key = char_upper(cmd->key);
 	}
 
+	
 	printf("%s-mode message: Command registered with mod = %d, key = %d\n", mode->name, cmd->mod, cmd->key);
 	sb_push(mode->commands, cmd);
 }
