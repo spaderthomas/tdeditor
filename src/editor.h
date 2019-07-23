@@ -26,7 +26,7 @@ typedef enum ModKey {
 } ModKey;
 
 typedef struct Command {
-	unsigned short key;
+	uint16 key;
 	ModKey mod;
 	void (*func) (EditorState*);
 } Command;
@@ -36,8 +36,8 @@ typedef struct Mode {
 	Command** commands; // stretchy buffer
 } Mode;
 
-#define CMD(key, mod, fn) { key, mod, fn }
-
+#define CMD(key, mod, fn) { key, mod, fn },
+#define CMD_END() { 0, 0, NULL },
 EditorState* get_editor_state();
 void update();
 void render();
@@ -47,3 +47,7 @@ void handle_input(tdstr* buffer);
 
 void register_mode(EditorState* state, Mode* mode);
 void register_cmd(Mode* mode, Command* cmd);
+
+int td_buf_len(EditorState* state);
+void td_delete_char_back(tdstr* buf, int i);
+void td_new_line(tdstr* buf, int i);

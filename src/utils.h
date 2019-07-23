@@ -1,9 +1,8 @@
 #define true 1
 #define false 0
 #define fox_for(iter, until) for (unsigned iter = 0; iter < until; iter++)
-#define TDNS_LOG_ARR(sb) fox_for(i, sb_count((sb))) { TDNS_LOG(sb[i]); }
-#define max(a, b) ((a) > (b) ? (a) : (b))
-#define min(a, b) ((a) < (b) ? (a) : (b))
+#define tdmax(a, b) ((a) > (b) ? (a) : (b))
+#define tdmin(a, b) ((a) < (b) ? (a) : (b))
 
 // Globals
 uint32 g_VAO;
@@ -11,8 +10,34 @@ uint32 g_VBO;
 uint32 EBO;
 uint32 g_texture;
 
-void TDNS_LOG(const char* str) {
+#define LOG_DEST_FILE 4
+
+void TD_LOG(const char* str) {
 	printf("%s\n", str);
+}
+
+void TD_LOG2(const char* str, uint16 flags) {
+	if (flags & STDOUT_FILENO) {
+		fprintf(stdout, "%s\n", str);
+	}
+	if (flags & STDERR_FILENO) {
+		fprintf(stderr, "%s\n", str);
+	}
+	if (flags & LOG_DEST_FILE) {
+		// lol
+	}
+}
+
+void TD_LOG_ARR(const char** sb) {
+	fox_for(i, sb_count(sb)) {
+		TD_LOG(sb[i]);
+	}
+}
+
+void TD_LOG_ARR2(const char** sb, uint16 flags) {
+	fox_for(i, sb_count(sb)) {
+		TD_LOG2(sb[i], flags);
+	}
 }
 
 bool is_upper(char c) {
@@ -30,6 +55,7 @@ char char_lower(char c) {
 char char_upper(char c) {
 	return c - 32;
 }
+
 // Returns the length of the string in bytes
 uint32 file_length(FILE* file) {
 	fseek(file, 0, SEEK_END);
@@ -116,21 +142,30 @@ void tdstr_push(tdstr* string, char c) {
 }
 
 void tdstr_pop(tdstr* string) {
+	if (string->len == 0) return;
 	string->len--;
 	string->buf[string->len] = 0;
 }
 
 void tdstr_insert(tdstr* string, char c, int i) {
-	if (i == string->len) return tdstr_push(string, c);
+	if (i == string->len) { tdstr_push(string, c); return; }
 	if (i > string->len) return;
 	if (i < 0) return;
 	
 	tdstr_maybe_grow(string);
-	memcpy(string->buf + i,      // copy from the byte you want to insert
-		   string->buf + i + 1,  // move it one byte down
-		   string->len - i);     // do it for the whole rest of the string
+	memmove(string->buf + i + 1,      // dest: one byte over
+		   string->buf + i,           // src: where you want to put the new character
+		   string->len - i);          // do it for the whole rest of the string
 	string->buf[i] = c;
 	string->len++;
+	string->buf[string->len] = 0;
+}
+
+void tdstr_remove(tdstr* string, int i) {
+	memmove(string->buf + i,           // dest: where the character currently occupies
+			string->buf + i + 1,	   // src: the start of the rest of the string
+			string->len - i);		   // do it for the whole rest of the string
+	string->len--;
 	string->buf[string->len] = 0;
 }
 
@@ -143,14 +178,13 @@ Config g_config = {0};
 
 
 void load_config() {
-	#ifdef WIN32
+	#ifdef _WIN32
 	FILE* config_file = fopen("C:/Programming/tdeditor/src/tded.conf", "r");
-	#endif
-	#ifndef WIN32
+	#else
 	FILE* config_file = fopen("/Ussssers/thspader/Programming/tdeditor/src/tded.conf", "r");
 	#endif
 	if (!config_file) {
-		TDNS_LOG("Error opening the config file.");
+		TD_LOG("Error opening the config file.");
 		exit(0);
 	}
 	char* config_source = file_contents(config_file);

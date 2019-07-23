@@ -1,5 +1,11 @@
 #include <stdio.h>
 #include <stdint.h>
+#ifndef _WIN32
+#include <unistd.h>
+#else
+#define STDOUT_FILENO 1
+#define STDERR_FILENO 2
+#endif
 
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
@@ -26,6 +32,19 @@
 #include "font_impl.h"
 
 int main(int argc, char** argv) {
+	tdstr str;
+	tdstr_init(&str);
+	tdstr_insert(&str, 'a', 0);
+	printf("td_str test: adding 'a' at position 0: %s\n", str.buf);
+	tdstr_insert(&str, 'b', 1);
+	printf("td_str test: adding 'b' at position 1: %s\n", str.buf);
+	tdstr_insert(&str, 'c', 2);
+	printf("td_str test: adding 'c' at position 2: %s\n", str.buf);
+	tdstr_insert(&str, '_', 2);
+	printf("td_str test: adding '_' at position 2: %s\n", str.buf);
+	tdstr_remove(&str, 1);
+	printf("td_str test: removing 'b' from position 1: %s\n", str.buf);
+	
 	load_config(&g_config);
 	EditorState* ctx = get_editor_state();
 	
@@ -100,7 +119,7 @@ int main(int argc, char** argv) {
 	int32 width, height, count_channels;
 	unsigned char* data = stbi_load(td_strcat(root_dir, "assets/container.jpg"), &width, &height, &count_channels, 0);
 	if (!data) {
-		TDNS_LOG("Could not load image");
+		TD_LOG("Could not load image");
 		exit(0);
 	}
 	

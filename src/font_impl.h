@@ -5,7 +5,7 @@ void load_char_info_px(FT_Face face, FontInfo* font) {
 		if (FT_Load_Char(face, c, FT_LOAD_RENDER)) {
 			char* error_msg = malloc(64 * sizeof(char));
 			sprintf(error_msg, "FreeType failed to load character: %c", c);
-			TDNS_LOG(error_msg);
+			TD_LOG(error_msg);
 		}
 
 		FontChar* px_info = font->px_infos + c;
@@ -50,7 +50,7 @@ void load_char_info_screen(FontInfo* font) {
 		screen_info->advance   = px_info->advance   / (float)ctx->screen_info.viewport.x;
 
 		// Cache the tallest character in screen units because it's useful
-		font->max_char_height = max(font->max_char_height, px_info->size.y / ctx->screen_info.viewport.y);
+		font->max_char_height = tdmax(font->max_char_height, px_info->size.y / ctx->screen_info.viewport.y);
 	}
 
 }
@@ -59,14 +59,14 @@ void load_default_font(EditorState* ctx) {
 	// Initialize FreeType
 	FT_Library ft;
 	if (FT_Init_FreeType(&ft)) {
-		TDNS_LOG("Error initializing FreeType");
+		TD_LOG("Error initializing FreeType");
 	}
 
 	// Get the default font
 	FT_Face face;
 	char* font_path = td_strcat(get_conf("font_dir"), get_conf("font_default"));
 	if (FT_New_Face(ft, font_path, 0, &face)) {
-		TDNS_LOG("Error loading font");
+		TD_LOG("Error loading font");
 	}
 
 	// Set FT + GL configs

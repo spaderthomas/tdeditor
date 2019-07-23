@@ -6,8 +6,8 @@ void shader_init(uint32* shader, const char* vs_path, const char* fs_path) {
 	// Grab the source code for the VS
 	FILE* vs_file = fopen(vs_path, "rb");
 	if (!vs_file) {
-		TDNS_LOG("Error opening vertex shader. Shader was:");
-		TDNS_LOG(vs_path);
+		TD_LOG("Error opening vertex shader. Shader was:");
+		TD_LOG(vs_path);
 	}
 	char* vs_source = file_contents(vs_file);
 	
@@ -22,14 +22,14 @@ void shader_init(uint32* shader, const char* vs_path, const char* fs_path) {
 		char* header = "Error compiling vertex shader!\n";
 		strcpy(what, header);
 		glGetShaderInfoLog(vs, 512, NULL, what + strlen(header));
-		TDNS_LOG(what);
+		TD_LOG(what);
 	}
 	
 	// Grab the source code for the FS
 	FILE* fs_file = fopen(fs_path, "rb");
 	if (!fs_file) {
-		TDNS_LOG("Error opening fragment shader. Shader was:");
-		TDNS_LOG(fs_path);
+		TD_LOG("Error opening fragment shader. Shader was:");
+		TD_LOG(fs_path);
 	}
 	char* fs_source = file_contents(fs_file);
 	
@@ -42,7 +42,7 @@ void shader_init(uint32* shader, const char* vs_path, const char* fs_path) {
 		char* header = "Error compiling fragment shader!\n";
 		strcpy(what, header);
 		glGetShaderInfoLog(fs, 512, NULL, what + strlen(header));
-		TDNS_LOG(what);
+		TD_LOG(what);
 	}
 	
 	*shader = glCreateProgram();
@@ -56,7 +56,7 @@ void shader_init(uint32* shader, const char* vs_path, const char* fs_path) {
 		char* header = "Error linking shader program!\n";
 		strcpy(what, header);
 		glGetShaderInfoLog(fs, 512, NULL, what + strlen(header));
-		TDNS_LOG(what);
+		TD_LOG(what);
 	}
 }
 

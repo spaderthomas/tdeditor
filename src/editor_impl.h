@@ -81,10 +81,6 @@ void handle_input(tdstr* buffer) {
 			maybe_insert_symbol(buffer, key);
 		}
 	}
-
-
-	if (was_pressed(GLFW_KEY_ENTER)) tdstr_push(buffer, '\n');
-	if (was_pressed(GLFW_KEY_BACKSPACE)) tdstr_pop(buffer);
 }
 
 void update() {
@@ -113,13 +109,31 @@ void render() {
 	dl_render(ctx->draw_list);
 }
 
+void draw_cursor(EditorState* state, FontInfo* font, Vec2 point) {
+	Vec2 a = { point.x, point.y };
+	Vec2 b = { point.x, point.y + font->max_char_height };
+	DrawCommand cmd;
+	cmd.shader_info.basic.shader = basic_shader;
+	dl_push_line(state->draw_list, a, b, &cmd);
+}
+
 void draw_text(EditorState* state) {
 	FontInfo* font = shget(state->fonts, get_conf("font_default"));
 	char* text = state->contents.buf;
 	uint32 len = strlen(text);
 	
 	Vec2 point = { -1.f, 1.f - font->max_char_height };
+
+	if (!len) {
+		draw_cursor(state, font, point);
+		return;
+	}
+	
 	fox_for(idx, len) {
+		if (idx == state->cursor_idx) {
+			draw_cursor(state, font, point);
+		}
+		
 		char c = text[idx];
 		if (c == '\n') {
 			point.x = -1;
@@ -144,15 +158,12 @@ void draw_text(EditorState* state) {
 			point.x = -1;
 			point.y -= font->max_char_height;
 		}
-
-		if (idx == state->cursor_idx) {
-			Vec2 a = { point.x, point.y };
-			Vec2 b = { point.x, point.y + font->max_char_height };
-			DrawCommand cmd;
-			cmd.shader_info.basic.shader = basic_shader;
-			dl_push_line(state->draw_list, a, b, &cmd);
-		}
 	}
+
+	if (len == state->cursor_idx) {
+		draw_cursor(state, font, point);
+	}
+
 }
 
 void register_mode(EditorState* state, Mode* mode) {
@@ -165,6 +176,19 @@ void register_cmd(Mode* mode, Command* cmd) {
 		cmd->key = char_upper(cmd->key);
 	}
 
-	printf("%s-mode message: Command registered with mod = %d, key = %c\n", mode->name, cmd->mod, cmd->key);
+	printf("%s-mode message: Command registered with mod = %d, key = %d\n", mode->name, cmd->mod, cmd->key);
 	sb_push(mode->commands, cmd);
+}
+
+// Buffer API!
+int td_buf_len(EditorState* state) {
+	return state->contents.len;
+}
+
+void td_delete_char_back(tdstr* buf, int i) {
+	tdstr_remove(buf, i);
+}
+
+void td_new_line(tdstr* buf, int i) {
+	tdstr_insert(buf, '\n', i);
 }

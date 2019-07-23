@@ -26,6 +26,7 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
 
 void gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void *userParam) {
 	(void)userParam;
+	uint16 log_flags = LOG_DEST_FILE;
 
 	switch (id) {
 	case 131169: // The driver allocated storage for renderbuffer
@@ -123,5 +124,5 @@ void gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, G
 	sb_push(debug_msg, msg_copy);
 	sb_push(debug_msg, "\n\n");
 
-	TDNS_LOG_ARR(debug_msg);
+	TD_LOG_ARR2(debug_msg, log_flags);
 }
