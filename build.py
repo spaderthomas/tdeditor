@@ -112,7 +112,7 @@ class tdbuild():
         print(colorama.Fore.GREEN + "[BUILD SUCCESSFUL]")
         
     def build_windows(self):
-        print("...building from", os.getcwd())
+        print(colorama.Fore.BLUE + "[tdbuild] " + colorama.Fore.RESET + "Running from {}".format(os.getcwd()))
         
         self.push("cl.exe")
 
@@ -127,7 +127,7 @@ class tdbuild():
         self.push("-" + build_options['Windows']['runtime_library'])
 
         for source_file in build_options['source_files']:
-            full_source_file_path = os.path.join(self.source_dir, source_file)
+            full_source_file_path = os.path.join(build_options['source_dir'], source_file)
             self.push(full_source_file_path)
 
         for include_dir in build_options['include_dirs']:
@@ -143,20 +143,33 @@ class tdbuild():
         for ignore in build_options['Windows']['ignore']:
             self.push("/ignore:" + ignore)
 
-        self.push("/out:" + self.out)
+        self.push("/out:" + build_options['Windows']['out'])
 
         make_cd_build_dir()
         
-        print("...generated compiler command:")
-        print(self.build_cmd)
-        print("...building")
+        print(colorama.Fore.BLUE + "[tdbuild] " + colorama.Fore.RESET + "Generated compiler command:")
+        print(colorama.Fore.BLUE + "[tdbuild] " + colorama.Fore.RESET + self.build_cmd)
+        print(colorama.Fore.BLUE + "[tdbuild] " + colorama.Fore.RESET + "Invoking the compiler")
         
         # @hack: is there a better way to keep a process open?
-        subprocess.run("{} && {}".format(\
-            os.path.join("..", "setup_devenv.bat"), self.build_cmd))
+        compile_error = False
+        process = subprocess.Popen("{} && {}".format(os.path.join("..", "setup_devenv.bat"), self.build_cmd), stdout=subprocess.PIPE)
+        compiler_messages, err = process.communicate()
+        compiler_messages = compiler_messages.decode('UTF-8').split('\n')
+        for message in compiler_messages:
+            if 'error' in message:
+                print(colorama.Fore.RED + "[tdbuild] " + colorama.Fore.RESET + message)
+                #print(colorama.Fore.RED + message)
+                compile_error = True
+            elif 'warning' in message:
+                print(colorama.Fore.ORANGE + message)
 
         os.chdir("..")
-        print(colorama.Fore.GREEN + "[BUILD SUCCESSFUL]")
+
+        if compile_error:
+            print(colorama.Fore.RED + "[BUILD FAILED]")
+        else:
+            print(colorama.Fore.GREEN + "[BUILD SUCCESSFUL]")
 
         
     def run(self):
