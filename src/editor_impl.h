@@ -4,6 +4,7 @@ void editor_init(EditorState* state) {
 	state->pane = calloc(sizeof(Pane), 1);
 	pane_init(state->pane);
 	state->pane->active = true;
+	state->pane->name = "fundamental";
 	
 	// Setup the viewport to default to 1080p
 	state->screen_info.viewport.x = 1920;
@@ -192,12 +193,16 @@ void register_cmd(Mode* mode, Command* cmd) {
 		cmd->key = char_upper(cmd->key);
 	}
 
-	
-	printf("%s-mode message: Command registered with mod = %d, key = %d\n", mode->name, cmd->mod, cmd->key);
+	// @hack Really long mode name could cause a memory error
+	char* message = calloc(sizeof(char), 128);
+	sprintf(message, "[%s-mode message] ", mode->name);
+	print_color(CONSOLE_BLUE, message);
+	printf("Command registered with mod = %d, key = %d\n", cmd->mod, cmd->key);
 	sb_push(mode->commands, cmd);
 }
 
 void activate_mode(Mode* mode, Pane* pane) {
+	printf("%s-mode activated in [%s]", mode->name, pane->name);
 	sb_push(pane->modes, mode);
 }
 

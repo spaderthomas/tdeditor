@@ -11,6 +11,7 @@ typedef struct Pane {
 	float bottom;
 	int cursor_idx;
 	tdstr contents;
+	const char* name;
 
 	bool active;
 

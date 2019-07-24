@@ -34,19 +34,6 @@
 #include "modes_impl.h"
 
 int main(int argc, char** argv) {
-	tdstr str;
-	tdstr_init(&str);
-	tdstr_insert(&str, 'a', 0);
-	printf("td_str test: adding 'a' at position 0: %s\n", str.buf);
-	tdstr_insert(&str, 'b', 1);
-	printf("td_str test: adding 'b' at position 1: %s\n", str.buf);
-	tdstr_insert(&str, 'c', 2);
-	printf("td_str test: adding 'c' at position 2: %s\n", str.buf);
-	tdstr_insert(&str, '_', 2);
-	printf("td_str test: adding '_' at position 2: %s\n", str.buf);
-	tdstr_remove(&str, 1);
-	printf("td_str test: removing 'b' from position 1: %s\n", str.buf);
-	
 	load_config();
 	EditorState* ctx = state();
 	
