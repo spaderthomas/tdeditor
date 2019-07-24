@@ -31,6 +31,7 @@
 
 #include "editor_impl.h"
 #include "font_impl.h"
+#include "modes_impl.h"
 
 int main(int argc, char** argv) {
 	tdstr str;
@@ -47,7 +48,7 @@ int main(int argc, char** argv) {
 	printf("td_str test: removing 'b' from position 1: %s\n", str.buf);
 	
 	load_config();
-	EditorState* ctx = get_editor_state();
+	EditorState* ctx = state();
 	
 	// GLFW init
 	glfwSetErrorCallback(glfw_error_callback);

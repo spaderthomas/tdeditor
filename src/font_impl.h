@@ -36,7 +36,7 @@ void load_char_info_px(FT_Face face, FontInfo* font) {
 // Convenience: Translate the pixel values that FreeType gives us into
 // screen coordinates. Call this function when the viewport changes
 void load_char_info_screen(FontInfo* font) {
-	EditorState* ctx = get_editor_state();
+	EditorState* ctx = state();
 	
 	for (char c = ' '; c <= '~'; c++) {
 		FontChar* screen_info = font->screen_infos + c;

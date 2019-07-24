@@ -4,7 +4,7 @@ void glfw_error_callback(int code, const char* msg) {
 
 void glfw_resize_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
-	EditorState* ctx = get_editor_state();
+	EditorState* ctx = state();
 	IVec2 viewport;
 	viewport.x = width;
 	viewport.y = height;

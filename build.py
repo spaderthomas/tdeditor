@@ -159,10 +159,9 @@ class tdbuild():
         for message in compiler_messages:
             if 'error' in message:
                 print(colorama.Fore.RED + "[tdbuild] " + colorama.Fore.RESET + message)
-                #print(colorama.Fore.RED + message)
                 compile_error = True
             elif 'warning' in message:
-                print(colorama.Fore.ORANGE + message)
+                print(colorama.Fore.YELLOW + "[tdbuild] " + colorama.Fore.RESET + message)
 
         os.chdir("..")
 

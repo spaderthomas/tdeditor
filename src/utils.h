@@ -3,6 +3,7 @@
 #define fox_for(iter, until) for (unsigned iter = 0; iter < until; iter++)
 #define tdmax(a, b) ((a) > (b) ? (a) : (b))
 #define tdmin(a, b) ((a) < (b) ? (a) : (b))
+#define fancy_assert(x) for ( ; !(x) ; assert(x) )
 
 typedef uint8_t        uint8;
 typedef int8_t         int8;
