@@ -116,6 +116,8 @@ class tdbuild():
         
         self.push("cl.exe")
 
+        self.push("/nologo")
+
         if build_options['cpp']:
             self.push("/TP")
         else:
@@ -145,26 +147,34 @@ class tdbuild():
 
         self.push("/out:" + build_options['Windows']['out'])
 
+
         make_cd_build_dir()
         
         print(colorama.Fore.BLUE + "[tdbuild] " + colorama.Fore.RESET + "Generated compiler command:")
         print(colorama.Fore.BLUE + "[tdbuild] " + colorama.Fore.RESET + self.build_cmd)
         print(colorama.Fore.BLUE + "[tdbuild] " + colorama.Fore.RESET + "Invoking the compiler")
+        print("")
         
         # @hack: is there a better way to keep a process open?
-        compile_error = False
         process = subprocess.Popen("{} && {}".format(os.path.join("..", "setup_devenv.bat"), self.build_cmd), stdout=subprocess.PIPE)
         compiler_messages, err = process.communicate()
         compiler_messages = compiler_messages.decode('UTF-8').split('\n')
+        
+        compile_error = False
+        compile_warning = False
         for message in compiler_messages:
             if 'error' in message:
                 print(colorama.Fore.RED + "[tdbuild] " + colorama.Fore.RESET + message)
                 compile_error = True
             elif 'warning' in message:
                 print(colorama.Fore.YELLOW + "[tdbuild] " + colorama.Fore.RESET + message)
+                compile_warning = True
 
         os.chdir("..")
 
+        if compile_error or compile_warning:
+            print("")
+            
         if compile_error:
             print(colorama.Fore.RED + "[BUILD FAILED]")
         else:

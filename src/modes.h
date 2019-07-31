@@ -16,3 +16,10 @@ static Command text_cmds[] = {
 	CMD_END()
 };
 
+static Mode fundamental_mode;
+void do_other_buffer(Pane* pane);
+
+static Command fundamental_cmds[] = {
+	CMD('o', Mod_CONTROL, do_other_buffer)
+	CMD_END()
+};

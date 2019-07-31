@@ -9,6 +9,7 @@ typedef struct Pane {
 	float right;
 	float top;
 	float bottom;
+	
 	int cursor_idx;
 	tdstr contents;
 	const char* name;
@@ -24,7 +25,7 @@ typedef struct Pane {
 typedef struct EditorState {
 	int frame;
 
-	Pane* pane;
+	Pane* first_pane;
 	
 	ScreenInfo screen_info;  
 	FontMap* fonts;           // string hash map

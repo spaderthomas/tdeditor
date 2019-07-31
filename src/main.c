@@ -132,7 +132,16 @@ int main(int argc, char** argv) {
 	float seconds_per_update = 1.f / 60.f;
 
 	text_mode_init();
+	fundamental_mode_init();
 	
+	Pane* other_pane = calloc(1, sizeof(Pane));
+	pane_init(other_pane);
+	other_pane->name = "test";
+	other_pane->left = -1;
+	other_pane->top = 1;
+	activate_mode(&text_mode, other_pane);
+	activate_mode(&fundamental_mode, other_pane);
+	add_pane(other_pane);
 
 	while (!glfwWindowShouldClose(window)) {
 		double frame_start_time = glfwGetTime();

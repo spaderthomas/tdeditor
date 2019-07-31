@@ -1,11 +1,12 @@
 void editor_init(EditorState* state) {
 	state->frame = 0;
 	
-	state->pane = calloc(sizeof(Pane), 1);
-	pane_init(state->pane);
-	state->pane->active = true;
-	state->pane->name = "fundamental";
-	
+	state->first_pane = calloc(sizeof(Pane), 1);
+	pane_init(state->first_pane);
+	state->first_pane->active = true;
+	state->first_pane->name = "fundamental";
+	state->first_pane->left = -.5;
+
 	// Setup the viewport to default to 1080p
 	state->screen_info.viewport.x = 1920;
 	state->screen_info.viewport.y = 1080;
@@ -30,14 +31,35 @@ EditorState* state() {
 }
 
 void pane_init(Pane* pane) {
-	pane->left = 0;
-	pane->right = 0;
-	pane->top = 0;
-	pane->bottom = 0;
+	pane->left = -1;
+	pane->right = 1;
+	pane->top = 1;
+	pane->bottom = -1;
 	pane->cursor_idx = 0;
 	tdstr_init(&pane->contents);
 	pane->active = false;
 	pane->next = NULL;
+}
+
+Pane* last_pane() {
+	Pane* pane = state()->first_pane;
+	while (pane && pane->next) {
+		pane = pane->next;
+	}
+	return pane;
+}
+
+Pane* active_pane() {
+	Pane* pane = state()->first_pane;
+	while (pane && !pane->active) {
+		pane = pane->next;
+	}
+	return pane;
+}
+
+void add_pane(Pane* pane) {
+	Pane* last = last_pane();
+	last->next = pane;
 }
 
 // Push a character to the buffer if it was pressed
@@ -97,8 +119,7 @@ void handle_input(Pane* pane) {
 }
 
 void update() {
-	Pane* pane = state()->pane;
-	while(pane && !pane->active) pane = pane->next;
+	Pane* pane = active_pane();
 	
 	fancy_assert(pane) {
 		uint16 log_flags = STDERR_FILENO;
@@ -140,7 +161,7 @@ void draw_text(Pane* pane) {
 	char* text = pane->contents.buf;
 	uint32 len = strlen(text);
 	
-	Vec2 point = { -1.f, 1.f - font->max_char_height };
+	Vec2 point = { pane->left, pane->top - font->max_char_height };
 
 	if (!len) {
 		draw_cursor(font, point);
@@ -154,7 +175,7 @@ void draw_text(Pane* pane) {
 		
 		char c = text[idx];
 		if (c == '\n') {
-			point.x = -1;
+			point.x = pane->left;
 			point.y -= font->max_char_height;
 		}
 		
@@ -202,7 +223,10 @@ void register_cmd(Mode* mode, Command* cmd) {
 }
 
 void activate_mode(Mode* mode, Pane* pane) {
-	printf("%s-mode activated in [%s]", mode->name, pane->name);
+	char* message = calloc(sizeof(char), 128);
+	sprintf(message, "[%s-mode message] ", mode->name);
+	print_color(CONSOLE_BLUE, message);
+	printf("%s-mode activated in [%s]\n", mode->name, pane->name);
 	sb_push(pane->modes, mode);
 }
 
