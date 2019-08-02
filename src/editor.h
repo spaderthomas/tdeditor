@@ -4,7 +4,7 @@ typedef struct DrawList DrawList;
 struct Mode;
 typedef struct Mode Mode;
 
-typedef struct Pane {
+typedef struct Buffer {
 	float left;
 	float right;
 	float top;
@@ -15,17 +15,18 @@ typedef struct Pane {
 	const char* name;
 
 	bool active;
+	bool visible;
 
-	Mode** modes;             // stretchy buffer of all modes active in this pane
+	Mode** modes;             // stretchy buffer of all modes active in this buffer
 
 
-	struct Pane* next;
-} Pane;
+	struct Buffer* next;
+} Buffer;
 
 typedef struct EditorState {
 	int frame;
 
-	Pane* first_pane;
+	Buffer* first_buffer;
 	
 	ScreenInfo screen_info;  
 	FontMap* fonts;           // string hash map
@@ -45,7 +46,7 @@ typedef enum ModKey {
 typedef struct Command {
 	uint16 key;
 	ModKey mod;
-	void (*func) (Pane*);
+	void (*func) (Buffer*);
 } Command;
 
 typedef struct Mode {
@@ -58,17 +59,28 @@ typedef struct Mode {
 void update();
 void render();
 void next_frame();
-void draw_text(Pane* ctx);
-void handle_input(Pane* pane);
+void draw_text(Buffer* ctx);
+void draw_cursor(FontInfo* font, Vec2 point);
+void handle_input(Buffer* buffer);
 
 EditorState* state();
 void editor_init(EditorState* state);
-void pane_init(Pane* pane);
+
+void buf_init(Buffer* buffer);
+void buf_draw(Buffer* buffer);
+Buffer* last_buffer();
+Buffer* active_buffer();
+Buffer* first_buffer();
+void add_buffer();
+
+void maybe_insert_char(Buffer* buffer, int key);
+void maybe_insert_symbol(Buffer* buffer, int key);
+
 
 void register_mode(EditorState* state, Mode* mode);
 void register_cmd(Mode* mode, Command* cmd);
-void activate_mode(Mode* mode, Pane* pane);
+void activate_mode(Mode* mode, Buffer* buffer);
 
-int td_buf_len(Pane* pane);
+int td_buf_len(Buffer* buffer);
 void td_delete_char_back(tdstr* buf, int i);
 void td_new_line(tdstr* buf, int i);

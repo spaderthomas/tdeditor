@@ -1,10 +1,10 @@
 static Mode text_mode;
 
-void do_begin_line(Pane* pane);
-void do_back_char(Pane* pane);
-void do_forward_char(Pane* pane);
-void do_delete_char_back(Pane* pane);
-void do_new_line(Pane* pane);
+void do_begin_line(Buffer* buffer);
+void do_back_char(Buffer* buffer);
+void do_forward_char(Buffer* buffer);
+void do_delete_char_back(Buffer* buffer);
+void do_new_line(Buffer* buffer);
 void text_mode_init();
 
 static Command text_cmds[] = {
@@ -17,9 +17,11 @@ static Command text_cmds[] = {
 };
 
 static Mode fundamental_mode;
-void do_other_buffer(Pane* pane);
+void do_other_buffer(Buffer* buffer);
+void do_split_vertical(Buffer* buffer);
 
 static Command fundamental_cmds[] = {
-	CMD('o', Mod_CONTROL, do_other_buffer)
+	CMD('b', Mod_CONTROL, do_other_buffer)
+	CMD('3', Mod_CONTROL, do_split_vertical)
 	CMD_END()
 };

@@ -202,6 +202,17 @@ void tdstr_remove(tdstr* string, int i) {
 	string->buf[string->len] = 0;
 }
 
+void tdstr_free(tdstr* str) {
+	free(str->buf);
+}
+
+void tdstr_copy(tdstr* dest, tdstr* src) {
+	tdstr_free(dest);
+	tdstr_init(dest);
+	memcpy(dest, src, 2 * sizeof(int));
+	memcpy(dest->buf, src->buf, src->cap * sizeof(char));
+}
+
 struct Config {
 	char** keys;
 	char** values;

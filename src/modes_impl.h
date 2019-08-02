@@ -1,31 +1,31 @@
-void do_begin_line(Pane* pane) {
+void do_begin_line(Buffer* buffer) {
 	printf("do_begin_line\n");
-	pane->cursor_idx = 0;
+	buffer->cursor_idx = 0;
 }
 
-void do_back_char(Pane* pane) {
+void do_back_char(Buffer* buffer) {
 	printf("do_back_char\n");
-	pane->cursor_idx = tdmax(pane->cursor_idx - 1, 0);
+	buffer->cursor_idx = tdmax(buffer->cursor_idx - 1, 0);
 }
 
-void do_forward_char(Pane* pane) {
+void do_forward_char(Buffer* buffer) {
 	printf("do_forward_char\n");
-	pane->cursor_idx = tdmin(pane->cursor_idx + 1, td_buf_len(pane));
+	buffer->cursor_idx = tdmin(buffer->cursor_idx + 1, td_buf_len(buffer));
 }
 
-void do_delete_char_back(Pane* pane) {
+void do_delete_char_back(Buffer* buffer) {
 	printf("do_delete_char_back\n");
-	td_delete_char_back(&pane->contents, pane->cursor_idx - 1);
-	pane->cursor_idx = tdmax(pane->cursor_idx - 1, 0);
+	td_delete_char_back(&buffer->contents, buffer->cursor_idx - 1);
+	buffer->cursor_idx = tdmax(buffer->cursor_idx - 1, 0);
 }
 
-void do_new_line(Pane* pane) {
+void do_new_line(Buffer* buffer) {
 	printf("do_new_line\n");
-	td_new_line(&pane->contents, pane->cursor_idx);
-	pane->cursor_idx = tdmin(pane->cursor_idx + 1, td_buf_len(pane));
+	td_new_line(&buffer->contents, buffer->cursor_idx);
+	buffer->cursor_idx = tdmin(buffer->cursor_idx + 1, td_buf_len(buffer));
 }
 
-void do_load_file(Pane* pane) {
+void do_load_file(Buffer* buffer) {
 	printf("do_load_file\n");
 }
 
@@ -40,23 +40,42 @@ void text_mode_init() {
 	}
 
 	register_mode(state(), &text_mode);
-	activate_mode(&text_mode, state()->first_pane);
+	activate_mode(&text_mode, state()->first_buffer);
 }
 
 
 /*
  * Fundamental Mode
  */
-void do_other_buffer(Pane* pane) {
+void do_other_buffer(Buffer* buffer) {
 	printf("do_other_buffer\n");
-	Pane* old_active = active_pane();
+	Buffer* old_active = active_buffer();
 	old_active->active = false;
 	
 	if (!old_active->next) {
-		state()->first_pane->active = true;
+		state()->first_buffer->active = true;
 		return;
 	}
 	old_active->next->active = true;
+}
+
+void do_split_vertical(Buffer* buffer) {
+	printf("do_split_vertical\n");
+	Buffer* new_buffer = calloc(1, sizeof(Buffer));
+	buf_copy(new_buffer, buffer);
+
+	buffer->active = false;
+
+	buffer->next = new_buffer;
+	
+	// By default, the new buffer goes to the left and the old one to the right
+	float boundary = (buffer->left + buffer->right) / 2;
+	new_buffer->left = boundary;
+	buffer->right = boundary;
+
+	activate_mode(&text_mode, new_buffer);
+	activate_mode(&fundamental_mode, new_buffer);
+
 }
 
 void fundamental_mode_init() {
@@ -69,5 +88,5 @@ void fundamental_mode_init() {
 	}
 
 	register_mode(state(), &fundamental_mode);
-	activate_mode(&fundamental_mode, state()->first_pane);
+	activate_mode(&fundamental_mode, state()->first_buffer);
 }
