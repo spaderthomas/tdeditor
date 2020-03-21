@@ -70,14 +70,15 @@ void load_default_font(EditorState* ctx) {
 		TD_LOG(td_strcat("Looked for font in: ", path));
 	}
 	free(path);
+	
 
 	// Set FT + GL configs
 	FT_Set_Pixel_Sizes(face, 0, 48);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
 	// Parse the font into a C struct
-	FontInfo* default_font = calloc(1, sizeof(FontInfo));
-	load_char_info_px(face, default_font);
-	load_char_info_screen(default_font);
-	shput(ctx->fonts, get_conf("font_default"), default_font);
+	FontInfo* font = calloc(1, sizeof(FontInfo));
+	load_char_info_px(face, font);
+	load_char_info_screen(font);
+	shput(ctx->fonts, default_font, font);
 }

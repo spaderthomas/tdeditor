@@ -1,29 +1,40 @@
-void editor_init(EditorState* state) {
-	state->frame = 0;
+void editor_init() {
+	state()->frame = 0;
 	
-	state->first_buffer = calloc(sizeof(Buffer), 1);
-	buf_init(state->first_buffer);
-	state->first_buffer->active = true;
-	state->first_buffer->name = "fundamental";
+	Buffer* fundamental = calloc(sizeof(Buffer), 1);
+	buf_init(fundamental);
+	fundamental->name = "fundamental";
+	fundamental->active = true;
+	fundamental->bottom = GL_BOTTOM + .1;
+	activate_mode(&text_mode, fundamental);
+	activate_mode(&fundamental_mode, fundamental);
+	buf_add_info(fundamental);
+	buf_add(fundamental);
 
-	// Setup the viewport to default to 1080p
-	state->screen_info.viewport.x = 1920;
-	state->screen_info.viewport.y = 1080;
+	Buffer* minibuf = calloc(sizeof(Buffer), 1);
+	buf_init(minibuf);
+	minibuf->top = GL_BOTTOM + .1;
+	activate_mode(&text_mode, minibuf);
+	activate_mode(&fundamental_mode, minibuf);
+	buf_add(minibuf);
 	
-	state->fonts = NULL;
-	
-	state->modes = NULL;
-	
-	state->draw_list = calloc(1, sizeof(DrawList));
+	state()->draw_list = calloc(1, sizeof(DrawList));
 }
 
 // Probably should return the address of a static variable instead of allocating,
 // but who cares?
 EditorState* state() {
 	static EditorState* state = NULL;
+
 	if (!state) {
 		state = calloc(1, sizeof(EditorState));
-		editor_init(state);
+		
+		// Setup the viewport to default to 1080p
+		state->screen_info.viewport.x = 1920;
+		state->screen_info.viewport.y = 1080;
+
+		state->fonts = NULL;
+		state->modes = NULL;
 	}
 
 	return state;
@@ -38,6 +49,7 @@ void buf_init(Buffer* buffer) {
 	tdstr_init(&buffer->contents);
 	buffer->active = false;
 	buffer->visible = true;
+	buffer->info = NULL;
 	buffer->next = NULL;
 }
 
@@ -51,83 +63,110 @@ void buf_copy(Buffer* dest, Buffer* src) {
 	dest->visible = src->visible;
 	dest->next = src->next;
 	dest->name = src->name;
+
+	if (src->info) {
+		buf_add_info(dest);
+	}
+
 	
 	tdstr_copy(&dest->contents, &src->contents);
 }
 
 void buf_draw(Buffer* buffer) {
-	FontInfo* font = shget(state()->fonts, get_conf("font_default"));
+	FontInfo* font = shget(state()->fonts, default_font);
+
+	DrawCommand cmd;
+	cmd.shader_info.basic.shader = basic_shader;
+	cmd.mode = GL_LINES;
+	if (buffer->info) {
+		dl_push_rect_outline(
+							 state()->draw_list,
+							 buffer->top,
+							 buffer->bottom + font->max_char_height,
+							 buffer->left, buffer->right,
+							 cmd);
+		
+		buf_draw(buffer->info);
+	} else {
+		dl_push_rect_outline(
+							 state()->draw_list,
+							 buffer->top,
+							 buffer->bottom,
+							 buffer->left, buffer->right,
+							 cmd);
+	}
+	
 	char* text = buffer->contents.buf;
 	uint32 len = strlen(text);
 	
 	Vec2 point = { buffer->left, buffer->top - font->max_char_height };
 
-	if (!len) {
-		if (buffer->active) draw_cursor(font, point);
-		return;
-	}
-	
 	fox_for(idx, len) {
 		if (idx == buffer->cursor_idx) {
 			if (buffer->active) draw_cursor(font, point);
 		}
-		
+	
 		char c = text[idx];
 		if (c == '\n') {
 			point.x = buffer->left;
 			point.y -= font->max_char_height;
+			continue;
 		}
-		
-		FontChar* char_info = &font->screen_infos[c];
 
-		// Make a rectangle:
-		float top = point.y + char_info->bearing.y;
-		float bottom = point.y - char_info->size.y + char_info->bearing.y;
-		float left = point.x + char_info->bearing.x;
-		float right = point.x + char_info->bearing.x + char_info->size.x;
-
-		DrawCommand cmd;
-		cmd.shader_info.text.shader = text_shader;
-		cmd.shader_info.text.texture = char_info->texture;
-		dl_push_rect(state()->draw_list, top, bottom, left, right, &cmd);
-
-		point.x += char_info->advance;
-		if (point.x > buffer->right) {
-			point.x = buffer->left;
-			point.y -= font->max_char_height;
-		}
+		dl_push_character(state()->draw_list, c, point, font);
+		advance_point(&point, c, font, buffer->left, buffer->right);
 	}
-
+	
 	if (len == buffer->cursor_idx) {
 		if (buffer->active) draw_cursor(font, point);
 	}
+
 }
 
-Buffer* last_buffer() {
-	Buffer* buffer = state()->first_buffer;
+Buffer* buf_last() {
+	Buffer* buffer = state()->buf_first;
 	while (buffer && buffer->next) {
 		buffer = buffer->next;
 	}
 	return buffer;
 }
 
-Buffer* active_buffer() {
-	Buffer* buffer = state()->first_buffer;
+Buffer* buf_active() {
+	Buffer* buffer = state()->buf_first;
 	while (buffer && !buffer->active) {
 		buffer = buffer->next;
 	}
 	return buffer;
 }
 
-void add_buffer(Buffer* buffer) {
-	Buffer* last = last_buffer();
+void buf_add(Buffer* buffer) {
+	Buffer* last = buf_last();
+	if (!last) {
+		state()->buf_first = buffer;
+		return;
+	}
+	
 	last->next = buffer;
 }
 
-Buffer* first_buffer() {
-	return state()->first_buffer;
+Buffer* buf_first() {
+	return state()->buf_first;
 }
 
+void buf_add_info(Buffer* buffer) {
+	// @hack
+	FontInfo* font = shget(state()->fonts, default_font);
+
+	Buffer* info = calloc(sizeof(Buffer), 1);
+	buf_init(info);
+	info->top = buffer->bottom + font->max_char_height;
+	info->bottom = buffer->bottom;
+	info->left = buffer->left;
+	info->right = buffer->right;
+	info->contents = tdstr_from_c(buffer->name);
+
+	buffer->info = info;
+}
 
 // Push a character to the buffer if it was pressed
 // GLFW key codes correspond to ASCII codes, so if shift isn't down, subtract 32 to get lower case
@@ -186,7 +225,7 @@ void handle_input(Buffer* buffer) {
 }
 
 void update() {
-	Buffer* buffer = active_buffer();
+	Buffer* buffer = buf_active();
 	
 	fancy_assert(buffer) {
 		uint16 log_flags = STDERR_FILENO;
@@ -197,7 +236,7 @@ void update() {
 	// Move the input into the text buffer
 	handle_input(buffer);
 
-	buffer = first_buffer();
+	buffer = buf_first();
 	while (buffer) {
 		if (buffer->visible) buf_draw(buffer);
 		buffer = buffer->next;
@@ -219,7 +258,7 @@ void draw_cursor(FontInfo* font, Vec2 point) {
 	Vec2 b = { point.x, point.y + font->max_char_height };
 	DrawCommand cmd;
 	cmd.shader_info.basic.shader = basic_shader;
-	dl_push_line(state()->draw_list, a, b, &cmd);
+	dl_push_line(state()->draw_list, a, b, cmd);
 }
 
 
@@ -250,6 +289,17 @@ void activate_mode(Mode* mode, Buffer* buffer) {
 }
 
 // Buffer API!
+void advance_point(Vec2* point, char c, FontInfo* font, float lbound, float rbound) {
+	FontChar* char_info = &font->screen_infos[c];
+	point->x += char_info->advance;
+	if (point->x > rbound) {
+		point->x = lbound;
+		point->y -= font->max_char_height;
+	}
+
+}
+	
+
 int td_buf_len(Buffer* buffer) {
 	return buffer->contents.len;
 }

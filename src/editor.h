@@ -4,6 +4,9 @@ typedef struct DrawList DrawList;
 struct Mode;
 typedef struct Mode Mode;
 
+#define BUFFER_READABLE  1 << 0
+#define BUFFER_WRITEABLE 1 << 1
+
 typedef struct Buffer {
 	float left;
 	float right;
@@ -16,17 +19,19 @@ typedef struct Buffer {
 
 	bool active;
 	bool visible;
+	
+	int flags;
 
 	Mode** modes;             // stretchy buffer of all modes active in this buffer
 
-
+	struct Buffer* info;
 	struct Buffer* next;
 } Buffer;
 
 typedef struct EditorState {
 	int frame;
 
-	Buffer* first_buffer;
+	Buffer* buf_first;
 	
 	ScreenInfo screen_info;  
 	FontMap* fonts;           // string hash map
@@ -56,6 +61,10 @@ typedef struct Mode {
 
 #define CMD(key, mod, fn) { key, mod, fn },
 #define CMD_END() { 0, 0, NULL },
+
+// Editor functions
+EditorState* state();
+void editor_init();
 void update();
 void render();
 void next_frame();
@@ -63,24 +72,27 @@ void draw_text(Buffer* ctx);
 void draw_cursor(FontInfo* font, Vec2 point);
 void handle_input(Buffer* buffer);
 
-EditorState* state();
-void editor_init(EditorState* state);
-
+// Buffer functions
 void buf_init(Buffer* buffer);
 void buf_draw(Buffer* buffer);
-Buffer* last_buffer();
-Buffer* active_buffer();
-Buffer* first_buffer();
-void add_buffer();
+void buf_add();
+void buf_add_info(Buffer* buffer);
+Buffer* buf_last();
+Buffer* buf_active();
+Buffer* buf_first();
 
 void maybe_insert_char(Buffer* buffer, int key);
 void maybe_insert_symbol(Buffer* buffer, int key);
 
-
+// Mode functions
 void register_mode(EditorState* state, Mode* mode);
 void register_cmd(Mode* mode, Command* cmd);
 void activate_mode(Mode* mode, Buffer* buffer);
 
+
+// API
+void advance_point(Vec2* point, char c, FontInfo* font, float lbound, float rbound);
 int td_buf_len(Buffer* buffer);
 void td_delete_char_back(tdstr* buf, int i);
 void td_new_line(tdstr* buf, int i);
+void td_set_buf_contents(Buffer* buffer, tdstr contents);

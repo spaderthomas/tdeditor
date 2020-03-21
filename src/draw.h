@@ -2,6 +2,45 @@ uint32 basic_shader;
 uint32 textured_shader;
 uint32 text_shader;
 
+// All of these structs use the program id as a tag 
+typedef struct Basic_Shader_Info {
+	uint32 shader;
+} Basic_Shader_Info;
+
+typedef struct Textured_Shader_Info {
+	uint32 shader;
+	uint32 texture;
+}  Textured_Shader_Info;
+
+typedef struct Text_Shader_Info {
+	uint32 shader;
+	uint32 texture;
+} Text_Shader_Info;
+
+typedef union Shader_Info {
+	Basic_Shader_Info basic;
+	Textured_Shader_Info textured;
+	Text_Shader_Info text;
+}  Shader_Info;
+
+typedef struct DrawCommand {
+	uint32 count_elems;
+	uint32 count_verts;
+	Shader_Info shader_info;
+	GLenum mode;
+} DrawCommand;
+
+void dl_render(DrawList* draw_list);
+void dl_push_elements(DrawList* draw_list, uint32* elements, uint32 count);
+void dl_push_character(DrawList* dl, char c, Vec2 point, FontInfo* font);
+void dl_push_line(DrawList* draw_list, Vec2 a, Vec2 b, DrawCommand cmd);
+void dl_push_rect(DrawList* draw_list, float top, float bottom, float left, float right, DrawCommand cmd);
+void dl_push_rect_outline(DrawList* draw_list, float top, float bottom, float left, float right, DrawCommand cmd);
+void dl_reset(DrawList* draw_list);
+void dl_push_elements(DrawList* draw_list, uint32* elements, uint32 count);
+void dl_push_vertices(DrawList* draw_list, Vertex* verts, uint32 count);
+void dl_push_primitive(DrawList* draw_list, Vertex* vertices, uint32* elements, DrawCommand cmd);
+
 void shader_init(uint32* shader, const char* vs_path, const char* fs_path) {
 	// Grab the source code for the VS
 	FILE* vs_file = fopen(vs_path, "rb");
@@ -61,33 +100,6 @@ void shader_init(uint32* shader, const char* vs_path, const char* fs_path) {
 	}
 }
 
-// All of these structs use the program id as a tag 
-struct Basic_Shader_Info {
-	uint32 shader;
-};
-typedef struct Basic_Shader_Info Basic_Shader_Info;
-#define make_basic_shader_info(var) Shader_Info var; var.basic.shader = basic_shader
-
-struct Textured_Shader_Info {
-	uint32 shader;
-	uint32 texture;
-};
-typedef struct Textured_Shader_Info Textured_Shader_Info;
-#define make_textured_shader_info(var) Shader_Info var; var.textured.shader = textured_shader
-
-struct Text_Shader_Info {
-	uint32 shader;
-	uint32 texture;
-};
-typedef struct Text_Shader_Info Text_Shader_Info;
-#define make_text_shader_info(var) Shader_Info var; var.text.shader = text_shader
-
-union Shader_Info {
-	Basic_Shader_Info basic;
-	Textured_Shader_Info textured;
-	Text_Shader_Info text;
-};
-typedef union Shader_Info Shader_Info;
 
 void shader_setup(Shader_Info* info) {
 	// The first element of each Shader_Info kind has an integer identifier
@@ -110,12 +122,6 @@ void shader_setup(Shader_Info* info) {
 	}
 }
 
-typedef struct DrawCommand {
-	uint32 count_elems;
-	uint32 count_verts;
-	Shader_Info shader_info;
-	GLenum mode;
-} DrawCommand;
 
 // All of the buffers are stretchy_buffers 
 typedef struct DrawList {
@@ -179,18 +185,40 @@ void dl_push_vertices(DrawList* draw_list, Vertex* verts, uint32 count) {
 // elements first to get the proper offset for vertices!
 void dl_push_primitive(DrawList* draw_list,
 					   Vertex* vertices, uint32* elements,
-					   DrawCommand* cmd) {
-	dl_push_elements(draw_list, elements, cmd->count_elems);
-	dl_push_vertices(draw_list, vertices, cmd->count_verts);
-	sb_push(draw_list->command_buffer, *cmd);
+					   DrawCommand cmd) {
+	dl_push_elements(draw_list, elements, cmd.count_elems);
+	dl_push_vertices(draw_list, vertices, cmd.count_verts);
+	sb_push(draw_list->command_buffer, cmd);
+}
+
+void dl_push_rect_outline(DrawList* draw_list,
+				  float top, float bottom, float left, float right,
+				  DrawCommand cmd) {
+	Vec2 bottom_left = {
+		left, bottom,
+	};
+	Vec2 bottom_right = {
+		right, bottom,
+	};
+	Vec2 top_left = {
+		left, top,
+	};
+	Vec2 top_right = {
+		right, top,
+	};
+
+	dl_push_line(draw_list, bottom_left, bottom_right, cmd);
+	dl_push_line(draw_list, bottom_right, top_right, cmd);
+	dl_push_line(draw_list, top_right, top_left, cmd);
+	dl_push_line(draw_list, top_left, bottom_left, cmd);
 }
 
 void dl_push_rect(DrawList* draw_list,
 				  float top, float bottom, float left, float right,
-				  DrawCommand* cmd) {
-	cmd->count_elems = 6;
-	cmd->count_verts = 4;
-	cmd->mode = GL_TRIANGLES;
+				  DrawCommand cmd) {
+	cmd.count_elems = 6;
+	cmd.count_verts = 4;
+	cmd.mode = GL_TRIANGLES;
 
 	Vertex bottom_left = {
 		left, bottom,
@@ -230,10 +258,10 @@ void dl_push_rect(DrawList* draw_list,
 
 void dl_push_line(DrawList* draw_list,
 			 Vec2 a, Vec2 b,
-			 DrawCommand* cmd) {
-	cmd->count_elems = 2;
-	cmd->count_verts = 2;
-	cmd->mode = GL_LINES;
+			 DrawCommand cmd) {
+	cmd.count_elems = 2;
+	cmd.count_verts = 2;
+	cmd.mode = GL_LINES;
 
 	Vertex cursor_top = {
 		a,
@@ -260,3 +288,17 @@ void dl_push_line(DrawList* draw_list,
 	dl_push_primitive(draw_list, verts, elements, cmd);
 }
 							   
+void dl_push_character(DrawList* dl, char c, Vec2 point, FontInfo* font) {
+	FontChar* char_info = &font->screen_infos[c];
+
+	// Make a rectangle:
+	float top = point.y + char_info->bearing.y;
+	float bottom = point.y - char_info->size.y + char_info->bearing.y;
+	float left = point.x + char_info->bearing.x;
+	float right = point.x + char_info->bearing.x + char_info->size.x;
+
+	DrawCommand cmd;
+	cmd.shader_info.text.shader = text_shader;
+	cmd.shader_info.text.texture = char_info->texture;
+	dl_push_rect(dl, top, bottom, left, right, cmd);
+}

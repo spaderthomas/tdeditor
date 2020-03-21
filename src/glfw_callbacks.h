@@ -13,7 +13,7 @@ void glfw_resize_callback(GLFWwindow* window, int width, int height) {
 	ctx->screen_info.viewport = viewport;
 
 	// Remap the pixel values of loaded font into screen values
-	FontInfo* font_info = shget(ctx->fonts, get_conf("font_default"));
+	FontInfo* font_info = shget(ctx->fonts, default_font);
 	load_char_info_screen(font_info);
 
 }

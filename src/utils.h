@@ -5,6 +5,9 @@
 #define tdmin(a, b) ((a) < (b) ? (a) : (b))
 #define fancy_assert(x) for ( ; !(x) ; assert(x) )
 
+#define GL_BOTTOM -1
+#define GL_TOP     1
+
 typedef uint8_t        uint8;
 typedef int8_t         int8;
 typedef unsigned short uint16;
@@ -160,6 +163,22 @@ void tdstr_init(tdstr* string) {
 	string->len = 0;
 }
 
+tdstr tdstr_from_c(const char* cstr) {
+	tdstr string;
+	string.buf = calloc(strlen(cstr) + 1, sizeof(char));
+	string.cap = strlen(cstr);
+	string.len = strlen(cstr);
+	
+	memcpy(string.buf, cstr, strlen(cstr));
+
+	return string;
+}
+
+char tdstr_at(tdstr* string, int i) {
+	assert(i < string->len);
+	return string->buf[i];
+}
+
 void tdstr_maybe_grow(tdstr* string) {
 	if (string->len == string->cap) {
 		string->cap *= 2;
@@ -270,5 +289,3 @@ typedef struct ScreenInfo {
 	IVec2 viewport;
 	float max_char_height;
 } ScreenInfo;
-
-

@@ -36,7 +36,6 @@
 
 int main(int argc, char** argv) {
 	load_config();
-	EditorState* ctx = state();
 	
 	// GLFW init
 	glfwSetErrorCallback(glfw_error_callback);
@@ -119,6 +118,8 @@ int main(int argc, char** argv) {
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	// Set up our global data structures
+	EditorState* ctx = state();
+
 	load_default_font(ctx);
 	fill_shift_map();
 
@@ -133,18 +134,7 @@ int main(int argc, char** argv) {
 	text_mode_init();
 	fundamental_mode_init();
 
-	/*
-	Buffer* other_buffer = calloc(1, sizeof(Buffer));
-	buf_init(other_buffer);
-	other_buffer->name = "test";
-	other_buffer->left = -1;
-	other_buffer->right = 0;
-	other_buffer->top = 1;
-	other_buffer->bottom = -1;
-	activate_mode(&text_mode, other_buffer);
-	activate_mode(&fundamental_mode, other_buffer);
-	add_buffer(other_buffer);
-	*/
+	editor_init();
 	
 	while (!glfwWindowShouldClose(window)) {
 		double frame_start_time = glfwGetTime();
@@ -164,6 +154,5 @@ int main(int argc, char** argv) {
 		while (glfwGetTime() - frame_start_time < seconds_per_update) {}
 	}
 	
-	printf("hahahahahaahahah!");
 	return 1;
 }

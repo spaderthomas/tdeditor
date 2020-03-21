@@ -25,10 +25,6 @@ void do_new_line(Buffer* buffer) {
 	buffer->cursor_idx = tdmin(buffer->cursor_idx + 1, td_buf_len(buffer));
 }
 
-void do_load_file(Buffer* buffer) {
-	printf("do_load_file\n");
-}
-
 void text_mode_init() {
 	text_mode.name = "text";
 
@@ -40,7 +36,6 @@ void text_mode_init() {
 	}
 
 	register_mode(state(), &text_mode);
-	activate_mode(&text_mode, state()->first_buffer);
 }
 
 
@@ -49,11 +44,11 @@ void text_mode_init() {
  */
 void do_other_buffer(Buffer* buffer) {
 	printf("do_other_buffer\n");
-	Buffer* old_active = active_buffer();
+	Buffer* old_active = buf_active();
 	old_active->active = false;
 	
 	if (!old_active->next) {
-		state()->first_buffer->active = true;
+		state()->buf_first->active = true;
 		return;
 	}
 	old_active->next->active = true;
@@ -72,11 +67,18 @@ void do_split_vertical(Buffer* buffer) {
 	float boundary = (buffer->left + buffer->right) / 2;
 	new_buffer->left = boundary;
 	buffer->right = boundary;
+	if (buffer->info) buffer->info->right = boundary;
+	if (new_buffer->info) new_buffer->info->left = boundary;
 
 	activate_mode(&text_mode, new_buffer);
 	activate_mode(&fundamental_mode, new_buffer);
-
 }
+
+void do_find_file(Buffer* buffer) {
+	TD_LOG("do_find_file");
+	
+}
+
 
 void fundamental_mode_init() {
 	fundamental_mode.name = "fundamental";
@@ -88,5 +90,4 @@ void fundamental_mode_init() {
 	}
 
 	register_mode(state(), &fundamental_mode);
-	activate_mode(&fundamental_mode, state()->first_buffer);
 }

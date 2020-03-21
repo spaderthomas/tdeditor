@@ -16,12 +16,16 @@ static Command text_cmds[] = {
 	CMD_END()
 };
 
+
 static Mode fundamental_mode;
+
 void do_other_buffer(Buffer* buffer);
 void do_split_vertical(Buffer* buffer);
+void do_find_file(Buffer* buffer);
 
 static Command fundamental_cmds[] = {
 	CMD('b', Mod_CONTROL, do_other_buffer)
 	CMD('3', Mod_CONTROL, do_split_vertical)
+	CMD('f', Mod_CONTROL, do_find_file)
 	CMD_END()
 };
