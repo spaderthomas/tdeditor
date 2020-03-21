@@ -64,11 +64,6 @@ void buf_copy(Buffer* dest, Buffer* src) {
 	dest->next = src->next;
 	dest->name = src->name;
 
-	if (src->info) {
-		buf_add_info(dest);
-	}
-
-	
 	tdstr_copy(&dest->contents, &src->contents);
 }
 

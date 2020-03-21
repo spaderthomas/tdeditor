@@ -67,8 +67,11 @@ void do_split_vertical(Buffer* buffer) {
 	float boundary = (buffer->left + buffer->right) / 2;
 	new_buffer->left = boundary;
 	buffer->right = boundary;
-	if (buffer->info) buffer->info->right = boundary;
-	if (new_buffer->info) new_buffer->info->left = boundary;
+	if (buffer->info) {
+		buf_add_info(new_buffer);
+		buffer->info->right = boundary;
+		new_buffer->info->left = boundary;
+	}
 
 	activate_mode(&text_mode, new_buffer);
 	activate_mode(&fundamental_mode, new_buffer);

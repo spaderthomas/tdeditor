@@ -1,0 +1,15 @@
+* Bugs
+There's some initialization order shit going on. Best to nip that in the bud.
+
+Better design for info buffers: Keep a pointer to the info buffer in the parent,
+but that's just a pointer to somewhere in the linked list. That way, you can
+treat it like any other buffer when you render and such, but when the parent
+changes it can update the child.
+* Thoughts
+Ah, C. Your simplicity is your elegance and your grotesqueness. Working with
+pointers /fucking sucks/ sometimes. Manually writing the equivalent of copy
+constructors is a pain in the ass. Stretchy buffers are amazing because they
+give you the elegance of using pointers for everything -- but as far as
+documenting their own purpose, they fucking suck. Looks like a pointer, walks
+like a pointer. Not using stretchy buffers fucking sucks because most of the
+time you want a pointer, god damn it. 
