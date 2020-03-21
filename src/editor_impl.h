@@ -50,6 +50,7 @@ void buf_copy(Buffer* dest, Buffer* src) {
 	dest->active = src->active;
 	dest->visible = src->visible;
 	dest->next = src->next;
+	dest->name = src->name;
 	
 	tdstr_copy(&dest->contents, &src->contents);
 }

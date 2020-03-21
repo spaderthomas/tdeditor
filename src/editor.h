@@ -12,7 +12,7 @@ typedef struct Buffer {
 	
 	int cursor_idx;
 	tdstr contents;
-	const char* name;
+	char* name;
 
 	bool active;
 	bool visible;

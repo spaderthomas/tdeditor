@@ -203,13 +203,15 @@ void tdstr_remove(tdstr* string, int i) {
 }
 
 void tdstr_free(tdstr* str) {
-	free(str->buf);
+	if (str->buf) free(str->buf);
 }
 
 void tdstr_copy(tdstr* dest, tdstr* src) {
 	tdstr_free(dest);
 	tdstr_init(dest);
-	memcpy(dest, src, 2 * sizeof(int));
+	dest->buf = calloc(src->cap, sizeof(char));
+	dest->cap = src->cap;
+	dest->len = src->len;
 	memcpy(dest->buf, src->buf, src->cap * sizeof(char));
 }
 
