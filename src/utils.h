@@ -84,7 +84,7 @@ char* file_contents(FILE* file) {
 	return contents;
 }
 
-char* td_strcat(char* first, char* second) {
+char* td_strcat(const char* first, const char* second) {
 	int total_len = strlen(first) + strlen(second) + 1;
 	char* buf = calloc(sizeof(char), total_len);
 	
@@ -222,13 +222,10 @@ Config g_config = {0};
 
 
 void load_config() {
-	#ifdef _WIN32
-	FILE* config_file = fopen(conf, "r");
-	#else
-	FILE* config_file = fopen("/Users/thspader/Programming/tdeditor/src/tded.conf", "r");
-	#endif
+	FILE* config_file = fopen(conf_path, "r");
 	if (!config_file) {
-		TD_LOG("Error opening the config file.");
+		TD_LOG("Error opening the config file. Path was: ");
+		TD_LOG(conf_path);
 		exit(0);
 	}
 	char* config_source = file_contents(config_file);

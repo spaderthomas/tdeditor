@@ -64,10 +64,12 @@ void load_default_font(EditorState* ctx) {
 
 	// Get the default font
 	FT_Face face;
-	char* font_path = td_strcat(get_conf("font_dir"), get_conf("font_default"));
-	if (FT_New_Face(ft, font_path, 0, &face)) {
+	char* path = td_strcat(font_path, default_font);
+	if (FT_New_Face(ft, path, 0, &face)) {
 		TD_LOG("Error loading font");
+		TD_LOG(td_strcat("Looked for font in: ", path));
 	}
+	free(path);
 
 	// Set FT + GL configs
 	FT_Set_Pixel_Sizes(face, 0, 48);

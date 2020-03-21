@@ -3,8 +3,6 @@
 #define STDOUT_FILENO 1
 #define STDERR_FILENO 2
 
-static const char* conf = "C:/Programming/tdeditor/src/tded.conf";
-
 #define CONSOLE_BLUE 1
 #define CONSOLE_GREEN 2
 #define CONSOLE_RED 4

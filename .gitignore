@@ -4,3 +4,4 @@ build/
 tded.conf
 log.txt
 tdeditor.sln
+__pycache__/

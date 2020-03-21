@@ -21,6 +21,7 @@
 
 #define TD_BUFFER_RAW_STRING
 
+#include "machine.h"
 #include "utils.h"
 #include "font.h"
 #include "editor.h"
@@ -75,18 +76,16 @@ int main(int argc, char** argv) {
 	}
 	
 	// Set up the shaders
-	char* root_dir = get_conf("root_dir");
-
-	char* basic_vs_path = td_strcat(root_dir, "assets/shaders/basic.vs");
-	char* basic_fs_path = td_strcat(root_dir, "assets/shaders/basic.fs");
+	char* basic_vs_path = td_strcat(project_root, "assets/shaders/basic.vs");
+	char* basic_fs_path = td_strcat(project_root, "assets/shaders/basic.fs");
 	shader_init(&basic_shader, basic_vs_path, basic_fs_path);
 
-	char* text_vs_path = td_strcat(root_dir, "assets/shaders/text.vs");
-	char* text_fs_path = td_strcat(root_dir, "assets/shaders/text.fs");
+	char* text_vs_path = td_strcat(project_root, "assets/shaders/text.vs");
+	char* text_fs_path = td_strcat(project_root, "assets/shaders/text.fs");
 	shader_init(&text_shader, text_vs_path, text_fs_path);
 
-	char* textured_vs_path = td_strcat(root_dir, "assets/shaders/textured.vs");
-	char* textured_fs_path = td_strcat(root_dir, "assets/shaders/textured.fs");
+	char* textured_vs_path = td_strcat(project_root, "assets/shaders/textured.vs");
+	char* textured_fs_path = td_strcat(project_root, "assets/shaders/textured.fs");
 	shader_init(&textured_shader, textured_vs_path, textured_fs_path);
 	
 	// GL object init
@@ -106,7 +105,7 @@ int main(int argc, char** argv) {
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(5 * sizeof(float)));
 	
 	int32 width, height, count_channels;
-	unsigned char* data = stbi_load(td_strcat(root_dir, "assets/container.jpg"), &width, &height, &count_channels, 0);
+	unsigned char* data = stbi_load(td_strcat(project_root, "assets/container.jpg"), &width, &height, &count_channels, 0);
 	if (!data) {
 		TD_LOG("Could not load image");
 		exit(0);
